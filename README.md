@@ -27,6 +27,8 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
   "Stock panel (pre-drilled)" the plan rings them, a part hole on one reuses it, new holes cutting into
   one are flagged, and the drill template greys them out. Siboor's 3D model has the middle duct 3.1 mm
   in front of its drilled holes; the stock layout follows the drawing. There's no 250 drawing.
+  The stock panel can also be fitted turned 180° (its frame holes allow that, not 90°): its holes
+  and cut-out turn, and so do the parts on it; the power inlet and Z motors stay where they are.
 - **Z motors**: the three NEMA17 Z motors hang from the deck to 40 mm above the panel; the rear one's
   mount reaches 62 mm. Measured on Siboor's 300 model (`tools/keepouts.py` on the bed/Z group). The front
   two keep their distance to their corners; the rear one and its mount stay centred at the back.

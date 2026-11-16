@@ -202,17 +202,29 @@ const STOCK = [
   ["duct", "Right duct", 157.5, -173.9, 90, { length: 325 }],
 ];
 
-export function stockLayout(size) {
-  const c = panelSide(size) / 2;
-  return STOCK.map(([part, label, x, y, rot, params], i) => ({
+// `turned`: on a stock panel turned 180° (its holes turned with it), every part turns 180° about
+// the panel centre; that needs `partOf` for the parts' footprints.
+export function stockLayout(size, { turned = false, partOf } = {}) {
+  const s = panelSide(size), c = s / 2;
+  const items = STOCK.map(([part, label, x, y, rot, params], i) => ({
     uid: `stock-${i}`, part, label, x: round1(x + c), y: round1(y + c), rot, params: params ? { ...params } : undefined,
   }));
+  return turned ? items.map(it => turn180(it, partOf(it), size)) : items;
+}
+
+// `item` turned 180° about the panel centre, as it moves when the panel it's on is turned. The
+// stock duct names follow where they end up ("Front duct" becomes "Rear duct").
+const OPPOSITE = { Front: "Rear", Rear: "Front", Left: "Right", Right: "Left" };
+export function turn180(item, part, size) {
+  const s = panelSide(size), r = footprint(item, part);
+  const label = item.label?.replace(/^(Front|Rear|Left|Right) duct$/, (_, w) => `${OPPOSITE[w]} duct`);
+  return { ...item, label, x: round1(s - r.x1), y: round1(s - r.y1), rot: (item.rot + 180) % 360 };
 }
 
 // Where a placed part goes back to in Siboor's stock layout: the stock item it came from, else
 // the nearest stock spot for the same part. Null for a part Siboor doesn't use.
-export function stockSpot(item, size) {
-  const spots = stockLayout(size).filter(s => s.part === item.part);
+export function stockSpot(item, size, opts) {
+  const spots = stockLayout(size, opts).filter(s => s.part === item.part);
   if (!spots.length) return null;
   const own = spots.find(s => s.uid === item.uid);
   if (own) return own;
@@ -227,16 +239,22 @@ const STOCK_CUTOUT = { x: 101.8, y: -103.5, w: 42, h: 32, r: 1 };
 export const REUSE_TOL = 0.5;   // a part hole this close to an existing hole uses it
 
 // `holesBySize`: public/parts/stock-panel.json (tools/stock_holes.py). Null where Siboor has no
-// drawing (250).
-export function stockPanel(holesBySize, size) {
+// drawing (250). `turned`: the panel fitted turned 180°, which its frame holes allow (12 mm in from
+// the sides, 14 from front and back: a 90° turn would put them 2.8 mm off).
+export function stockPanel(holesBySize, size, { turned = false } = {}) {
   const holes = holesBySize[size];
   if (!holes) return null;
-  const c = panelSide(size) / 2;
+  const s = panelSide(size), c = s / 2;
+  const cut = { ...STOCK_CUTOUT, x: STOCK_CUTOUT.x + c, y: STOCK_CUTOUT.y + c, existing: true };
+  const t = turned ? (x, y) => [round2(s - x), round2(s - y)] : (x, y) => [x, y];
   return {
-    holes: holes.map(h => ({ ...h, drill: h.d, existing: true })),
-    cutouts: [{ ...STOCK_CUTOUT, x: STOCK_CUTOUT.x + c, y: STOCK_CUTOUT.y + c, existing: true }],
+    holes: holes.map(h => { const [x, y] = t(h.x, h.y); return { ...h, x, y, drill: h.d, existing: true }; }),
+    cutouts: [turned ? { ...cut, x: s - cut.x - cut.w, y: s - cut.y - cut.h } : cut],
+    turned,
   };
 }
+
+const round2 = v => Math.round(v * 100) / 100;
 
 export function existingHole(hole, stock) {
   return stock?.holes.find(s => Math.hypot(s.x - hole.x, s.y - hole.y) <= REUSE_TOL) ?? null;

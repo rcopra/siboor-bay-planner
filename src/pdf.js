@@ -91,7 +91,7 @@ export function drillTemplate(d, { paper = "A4", size, iec }) {
   const lines = [
     `Panel ${d.s} × ${d.s} mm, seen from above (its top face), front edge at the bottom. X, Y: mm from the front-left corner.`,
     d.stock
-      ? `Starting from Siboor's stock panel: ${nNew} new hole(s) and ${cNew} new cut-out(s) to make; existing ones are grey. Pages 3 to ${pages} are the panel at 1:1.`
+      ? `Starting from Siboor's stock panel${d.turned ? ", turned 180°" : ""}: ${nNew} new hole(s) and ${cNew} new cut-out(s) to make; existing ones are grey. Pages 3 to ${pages} are the panel at 1:1.`
       : `${d.holes.length} holes, ${d.cutouts.length} cut-out(s). Pages 3 to ${pages} are the panel at 1:1.`,
     "1. Print at 100% (\"Actual size\", not \"Fit to page\"). Check the 100 mm bar on every page.",
     "2. Trim each page along its border where it meets another page; overlap and tape them so the crosses line up.",

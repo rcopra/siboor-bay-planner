@@ -1,4 +1,4 @@
-import { SIZES, BAY_HEIGHT, panelSide, problems, stockLayout, stockSpot, stockPanel, existingHole, partSize, partHoles, placedHoles, holeLabel, round1 } from "./bay.js";
+import { SIZES, BAY_HEIGHT, panelSide, problems, stockLayout, stockSpot, stockPanel, turn180, existingHole, partSize, partHoles, placedHoles, holeLabel, round1 } from "./bay.js";
 import { Plan2D } from "./plan2d.js";
 import { View3D } from "./view3d.js";
 import { panelDrawing, panelDXF } from "./panel.js";
@@ -24,13 +24,15 @@ const app = {
   partOf: it => partById.get(it.part),
   colourOf: (part, it) => it?.colour || COLOURS[part.category] || "#ccc",
   // the stock panel's holes when starting from it (null on a blank panel, or at 250: no drawing)
-  stock() { return this.state.base === "blank" ? null : stockPanel(STOCK_HOLES, this.state.size); },
+  stock() { return this.state.base === "blank" ? null : stockPanel(STOCK_HOLES, this.state.size, this.stockOpts()); },
+  // where Siboor's parts go: on the stock panel's holes, turned with it
+  stockOpts() { return { turned: this.state.base === "stock180", partOf: this.partOf }; },
   select(uid) { this.state.selected = uid; update(); },
   move(uid, x, y) { const it = find(uid); it.x = round1(x); it.y = round1(y); update(false); },
   commit() { save(); },
 };
-app.state.items = app.state.items.filter(it => partById.has(it.part));
-app.state.base ??= "stock";   // parts since removed from the library
+app.state.items = app.state.items.filter(it => partById.has(it.part));   // parts since removed from the library
+app.state.base ??= "stock";
 const plan = new Plan2D($("plan"), app);
 const view = new View3D($("three"), app);
 
@@ -45,7 +47,8 @@ function update(persist = true) {
   const st = app.state;
   app.problems = problems(st.items, app.partOf, st.size, { iec: st.iec, stock: app.stock() });
   $("legend-stock").hidden = !app.stock();
-  $("base").options[0].textContent = STOCK_HOLES[st.size] ? "Stock panel (pre-drilled)" : `Stock panel (no Siboor drawing at ${st.size})`;
+  for (const o of $("base").options) if (o.value !== "blank") o.disabled = !STOCK_HOLES[st.size];
+  $("base").title = STOCK_HOLES[st.size] ? "Start from Siboor's pre-drilled bottom panel (as fitted, or turned 180°), or a blank one" : `Siboor has no drawing of the ${st.size} panel: blank only`;
   if (!$("plan").hidden) plan.render();
   if (!$("three").hidden) view.render();
   renderStatus();
@@ -119,7 +122,7 @@ function renderSelected() {
     holeText += reused === holes.length ? `<br><b>All on existing holes</b>: nothing to drill` : reused ? `<br>${reused} on existing holes, <b>${holes.length - reused} new</b>` : `<br><b>All new</b>: none on existing holes`;
   }
   html += `<p class="info">${part.name !== nameOf(it) ? esc(part.name) + "<br>" : ""}${w} × ${d} mm, ${h} mm tall (bay ${BAY_HEIGHT} mm)<br>${holeText}${part.notes ? "<br>" + esc(part.notes) : ""}</p>`;
-  const spot = stockSpot(it, app.state.size);
+  const spot = stockSpot(it, app.state.size, app.stockOpts());
   const atSpot = spot && spot.x === it.x && spot.y === it.y && spot.rot === it.rot && (part.kind !== "duct" || spot.params.length === it.params.length);
   if (spot) html += `<button id="tostock" class="wide" ${atSpot ? "disabled" : ""} title="Siboor's position${part.kind === "duct" ? " and length" : ""} for this part, on the stock panel's holes">${atSpot ? "✓ At its stock position" : "↺ Back to stock position"}</button>`;
   html += `<div class="actions"><button id="dup">Duplicate</button><button id="del">Remove</button></div>`;
@@ -180,7 +183,13 @@ $("size").onchange = e => {
   update();
 };
 $("base").value = app.state.base;
-$("base").onchange = e => { app.state.base = e.target.value; update(); };
+$("base").onchange = e => {
+  // turning the stock panel turns what's mounted on it; the printer's keep-outs stay put
+  const was = app.state.base, now = e.target.value;
+  if (was !== "blank" && now !== "blank" && was !== now) app.state.items = app.state.items.map(it => turn180(it, app.partOf(it), app.state.size));
+  app.state.base = now;
+  update();
+};
 $("iec").checked = app.state.iec;
 $("iec").onchange = e => { app.state.iec = e.target.checked; update(); };
 
@@ -190,7 +199,7 @@ document.addEventListener("click", e => {
 });
 $("stock").onclick = () => {
   if (app.state.items.length && !confirm("Replace this layout with Siboor's stock layout?")) return;
-  app.state.items = stockLayout(app.state.size); app.state.selected = null; update();
+  app.state.items = stockLayout(app.state.size, app.stockOpts()); app.state.selected = null; update();
 };
 $("clear").onclick = () => {
   if (app.state.items.length && !confirm("Remove every part?")) return;

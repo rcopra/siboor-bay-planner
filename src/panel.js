@@ -27,7 +27,7 @@ export function panelDrawing(state, partOf, stock = null) {
   const cutouts = items.flatMap(p => placedCutouts(p.it, p.part).map(c => ({ ...c, existing: !!existingCutout(c, stock), part: name(p) })));
   if (stock) for (const e of stock.cutouts) if (!cutouts.some(c => c.existing && existingCutout(c, { cutouts: [e] }))) cutouts.push({ ...e, part: "Stock panel (unused)" });
   const parts = items.map(p => ({ ...footprint(p.it, p.part), name: name(p) }));
-  return { s, r: CORNER_R, holes, cutouts, parts, stock: !!stock };
+  return { s, r: CORNER_R, holes, cutouts, parts, stock: !!stock, turned: !!stock?.turned };
 }
 
 // --- DXF (R12: lines, arcs and circles, which every laser and CAM program reads) -----------

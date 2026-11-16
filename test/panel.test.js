@@ -83,3 +83,23 @@ test("a new duct goes back to the nearest stock duct spot, with its length", () 
   assert.equal(bay.stockSpot({ uid: "b", part: "box", x: 0, y: 0, rot: 0 }, 350), null);
   assert.equal(bay.stockPanel(STOCK_HOLES, 250), null);
 });
+
+test("stock panel turned 180°: holes, cut-out and Siboor's parts turn with it", () => {
+  const size = 350, s = 487;
+  const as = bay.stockPanel(STOCK_HOLES, size), turned = bay.stockPanel(STOCK_HOLES, size, { turned: true });
+  for (const h of as.holes) assert.ok(turned.holes.some(t => near(t.x, s - h.x, 0.01) && near(t.y, s - h.y, 0.01)));
+  const c = as.cutouts[0], t = turned.cutouts[0];
+  assert.ok(near(t.x, s - c.x - c.w, 0.01) && near(t.y, s - c.y - c.h, 0.01));
+  // the turned stock layout sits on the turned holes, and fits (inlet and Z motors don't turn)
+  const opts = { turned: true, partOf };
+  const items = bay.stockLayout(size, opts);
+  const d = panelDrawing({ size, items }, partOf, turned);
+  assert.deepEqual(d.holes.filter(h => !h.existing && !h.frame).map(h => `${h.part} ${h.x},${h.y}`), []);
+  assert.deepEqual(d.cutouts.map(c => c.existing), [true]);
+  const p = bay.problems(items, partOf, size, { iec: true, stock: turned });
+  for (const [uid, msgs] of Object.entries(p)) assert.deepEqual(msgs, [], uid);
+  // turning twice is the identity, and a turned part's spot is the turned stock spot
+  const m8p = bay.stockLayout(size).find(i => i.part === "manta-m8p");
+  assert.deepEqual(bay.turn180(bay.turn180(m8p, partOf(m8p), size), partOf(m8p), size), m8p);
+  assert.deepEqual(bay.stockSpot(bay.turn180(m8p, partOf(m8p), size), size, opts), items.find(i => i.uid === m8p.uid));
+});
