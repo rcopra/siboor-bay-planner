@@ -24,6 +24,9 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
   The wiring diagram lists what lands on each terminal.
 - **3D preview**: the bay with its parts and wires.
 
+Cmd+Z / Ctrl+Z undoes any change to the layout, its wires and your own parts' holes and terminals;
+Cmd+Shift+Z (or Ctrl+Y) redoes. What's selected isn't an undo step.
+
 ## Your own parts
 
 "Add your own part" (or drop a `.step` / `.stp` on the page) reads the file in the browser with

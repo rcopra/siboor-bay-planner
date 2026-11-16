@@ -5,6 +5,7 @@ import { panelDrawing, panelDXF } from "./panel.js";
 import { drillTemplate } from "./pdf.js";
 import { routeWires } from "./wires.js";
 import { Wiring } from "./wiring.js";
+import { History } from "./history.js";
 import { UP, readStep, guessUp, toPart, allUploads, putUpload, deleteUpload, fileId, packUpload, unpackUpload } from "./uploads.js";
 
 const $ = id => document.getElementById(id);
@@ -24,6 +25,8 @@ const STOCK_HOLES = await (await fetch("parts/stock-panel.json")).json();
 // Parts from people's own STEP files (uploads.js): id -> the stored upload.
 const uploads = new Map();
 function register(u) { uploads.set(u.id, u); partById.set(u.id, toPart(u)); }
+let undo = null;   // History of the layout (below), once the app is set up
+
 // Terminals added by hand to a placed copy of an upload (before they were kept with the part)
 // move onto the upload, keeping their ids, so the wires on them stay put.
 function adoptTerminals() {
@@ -60,13 +63,44 @@ app.state.items = app.state.items.filter(it => partById.has(it.part));   // part
 app.state.base ??= "stock";
 app.state.wires ??= [];
 adoptTerminals();
+undo = new History(snapshot());
 app.wiring = new Wiring(app);
 const plan = new Plan2D($("plan"), app);
 const view = new View3D($("three"), app);
 
 function find(uid) { return app.state.items.find(i => i.uid === uid); }
 function uid() { return Math.random().toString(36).slice(2, 9); }
-function save() { localStorage.setItem(KEY, JSON.stringify(app.state)); }
+function save() { localStorage.setItem(KEY, JSON.stringify(app.state)); undo?.record(snapshot()); }
+
+// --- undo -------------------------------------------------------------------------------
+
+// What undo brings back: the layout and wires, and the edits to people's own parts (their STEP
+// files stay as they are). Not what's selected, nor the auto-route switch.
+function snapshot() {
+  const NOT_UNDONE = new Set(["selected", "wireSel", "wirePart", "autoRoute"]);
+  return JSON.stringify({
+    state: Object.fromEntries(Object.entries(app.state).filter(([k]) => !NOT_UNDONE.has(k))),
+    uploads: [...uploads.values()].map(u => ({ id: u.id, name: u.name, up: u.up, holes: u.holes, terminals: u.terminals ?? [] })),
+  });
+}
+function restore(snap) {
+  const { state, uploads: saved } = JSON.parse(snap), st = app.state;
+  for (const s of saved) {
+    const u = uploads.get(s.id);   // a part since removed from the planner stays removed
+    if (!u || JSON.stringify([u.name, u.up, u.holes, u.terminals ?? []]) === JSON.stringify([s.name, s.up, s.holes, s.terminals])) continue;
+    Object.assign(u, s); register(u); putUpload(u);
+  }
+  const items = state.items.filter(it => partById.has(it.part)), kept = new Set([...items.map(i => i.uid), "printer"]);
+  const wires = state.wires.filter(w => kept.has(w.a.uid) && kept.has(w.b.uid)), has = uid => items.some(i => i.uid === uid);
+  app.state = { ...state, items, wires, autoRoute: st.autoRoute, selected: has(st.selected) ? st.selected : null,
+    wirePart: has(st.wirePart) ? st.wirePart : null, wireSel: wires.some(w => w.id === st.wireSel) ? st.wireSel : null };
+  app.wiring.drawing = null; app.wiring.placing = null;
+  $("size").value = app.state.size; $("iec").checked = app.state.iec; $("base").value = app.state.base;
+  if (state.size !== st.size) plan.fit();
+  renderLibrary();
+  localStorage.setItem(KEY, JSON.stringify(app.state));
+  update(false);
+}
 function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } }
 const nameOf = it => it.label || app.partOf(it).name;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -413,7 +447,16 @@ $("autoroute").checked = !!app.state.autoRoute;
 $("autoroute").onchange = e => { app.state.autoRoute = e.target.checked; update(); };
 
 document.addEventListener("keydown", e => {
-  if (e.target.matches("input, select, textarea")) return;
+  if (e.target.matches("input, select, textarea")) return;   // their own undo
+  // Cmd/Ctrl+Z undo; Cmd/Ctrl+Shift+Z or Ctrl+Y redo. A wire being drawn is just dropped.
+  const key = e.key.toLowerCase();
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && (key === "z" || (key === "y" && e.ctrlKey))) {
+    e.preventDefault();
+    if (app.wiring.drawing) { app.wiring.drawing = null; return update(false); }
+    const snap = key === "y" || e.shiftKey ? undo.redo() : undo.undo();
+    if (snap) restore(snap);
+    return;
+  }
   if (app.view === "wiring") { if (app.wiring.keys(e)) e.preventDefault(); return; }
   if (app.view !== "layout") return;
   const it = app.state.selected && find(app.state.selected);
