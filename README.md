@@ -22,6 +22,10 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
   (no Siboor drawing), and Siboor's stock layout doesn't fit it as-is.
 - **Keep-outs and bay height** (78 mm, panel top to deck underside): measured on Siboor's 300 model
   (`tools/keepouts.py`). They keep their distance to the edges at every size.
+- **Z motors**: the three NEMA17 Z motors hang from the deck to 40 mm above the panel; the rear one's
+  mount reaches 62 mm. Measured on Siboor's 300 model (`tools/keepouts.py` on the bed/Z group). The front
+  two keep their distance to their corners; the rear one and its mount stay centred at the back.
+  Only parts taller than ~40 mm can hit them, so ducts and the PSU pass underneath.
 - **Stock parts** (`public/parts/`, written by `tools/extract_stock.py` from Siboor's model): PSU, SSR,
   Manta M8P, cable distribution box. Mounting holes come from Siboor's pre-drilled base plate (`tools/holes.py`).
   The M8P STEP is a light version (board outline, standoffs and fans, with no connectors). Its 3D view keeps the detail.

@@ -57,6 +57,18 @@ export function keepouts(size, { iec = true } = {}) {
     { name: "Foot (rear right)", x: s - 34.5, y: s - 33.5, w: 34.5, d: 33.5, z0: 0, z1: 63 },
   ];
   if (iec) out.push({ name: "Stock IEC inlet + switch", x: 42.9, y: s - 50.7, w: 57.2, d: 49.1, z0: 5, z1: 53 });
+  // The three NEMA17 Z motors hang from the deck into the bay (Siboor's 300 model, bed/Z group).
+  // Only the motor bodies and the lower part of the rear mount reach below the deck; the front
+  // mounts sit entirely above it. The rear mount box is its measured section below the deck.
+  // The front two keep their distance to their corners; the rear one and its mount stay centred
+  // and keep their distance to the rear edge. `screw`: the lead screw's centre.
+  const c = s / 2;
+  out.push(
+    { name: "Z motor (front left)", kind: "z", x: 9.5, y: 9.4, w: 42.2, d: 42.6, z0: 40.3, z1: BAY_HEIGHT, screw: [30.7, 30.5] },
+    { name: "Z motor (front right)", kind: "z", x: s - 51.7, y: 9.6, w: 42.6, d: 42.2, z0: 40.3, z1: BAY_HEIGHT, screw: [s - 30.4, 30.5] },
+    { name: "Z motor (rear)", kind: "z", x: c - 21.0, y: s - 59.5, w: 42.2, d: 42.6, z0: 39.3, z1: BAY_HEIGHT, screw: [c + 0.3, s - 38.4] },
+    { name: "Z motor mount (rear)", kind: "z", x: c - 36.8, y: s - 59.3, w: 73.8, d: 50.9, z0: 62, z1: BAY_HEIGHT },
+  );
   return out;
 }
 

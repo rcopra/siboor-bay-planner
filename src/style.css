@@ -38,7 +38,7 @@ h2 { font-size: 11px; margin: 0 0 8px; text-transform: uppercase; letter-spacing
 .seg button:first-child { border-radius: 7px 0 0 7px; }
 .seg button:last-child { border-radius: 0 7px 7px 0; }
 .seg button.on { background: var(--accent); color: #fff; }
-#legend { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 12px; align-items: center; font-size: 11px; color: #444; background: #fffd; padding: 4px 10px; border-radius: 6px; }
+#legend { position: absolute; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; font-size: 11px; color: #444; background: #fffd; padding: 4px 10px; border-radius: 6px; }
 #legend .keys { color: var(--muted); }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: -0.5px; }
 .dot.through { background: #3b7fe0; } .dot.M3 { background: #2fae4a; } .dot.M4 { background: #e03030; }
@@ -86,3 +86,8 @@ td.n { text-align: right; width: 28px; color: var(--muted); }
 .dim { font-size: 9px; fill: #555; }
 .credit { font-size: 11px; color: var(--muted); margin-top: 24px; }
 .credit a { color: inherit; }
+.zmotor { fill: #8a5cd6; fill-opacity: .28; stroke: #b48cff; stroke-width: .8; pointer-events: none; }
+.zscrew { fill: none; stroke: #d9c2ff; stroke-width: 1; pointer-events: none; }
+.zlabel { font-size: 11px; font-weight: 700; fill: #e4d4ff; pointer-events: none; }
+.sq { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -0.5px; }
+.sq.z { background: #8a5cd6aa; border: 1px solid #b48cff; }

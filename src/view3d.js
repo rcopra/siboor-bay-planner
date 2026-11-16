@@ -99,7 +99,9 @@ export class View3D {
 
     for (const k of keepouts(state.size, { iec: state.iec })) {
       const b = new THREE.Mesh(new THREE.BoxGeometry(k.w, k.d, k.z1 - k.z0),
-        new THREE.MeshBasicMaterial({ color: k.z0 > 40 ? "#d4b040" : "#8890a0", transparent: true, opacity: .18, depthWrite: false }));
+        k.kind === "z"
+          ? new THREE.MeshStandardMaterial({ color: "#8a5cd6", transparent: true, opacity: .55, depthWrite: false })
+          : new THREE.MeshBasicMaterial({ color: k.z0 > 40 ? "#d4b040" : "#8890a0", transparent: true, opacity: .18, depthWrite: false }));
       b.position.set(k.x + k.w / 2, k.y + k.d / 2, (k.z0 + k.z1) / 2);
       group.add(b);
     }

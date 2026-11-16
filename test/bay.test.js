@@ -50,3 +50,19 @@ test("a planted overlap, a part on the feet and a too-tall part are flagged", ()
   assert.ok(p.c.some(m => m.includes("Foot (front left)")));
   assert.ok(p.d.some(m => m.includes("above the deck")));
 });
+
+test("Z motors: placed as in Siboor's 300 model, and only tall parts under them clash", () => {
+  const z = bay.keepouts(300).filter(k => k.kind === "z"), c = 218.5;
+  // lead screws relative to the panel centre (Siboor model): front ones near the corners, rear one centred
+  assert.deepEqual(z.filter(k => k.screw).map(k => k.screw.map(v => +(v - c).toFixed(1))), [[-187.8, -188], [188.1, -188], [0.3, 180.1]]);
+  // at 350 the front motors keep their corner distance; the rear one stays centred
+  const z350 = bay.keepouts(350).filter(k => k.screw);
+  assert.deepEqual(z350.map(k => k.screw), [[30.7, 30.5], [487 - 30.4, 30.5], [243.5 + 0.3, 487 - 38.4]]);
+  const items = [
+    { uid: "low", part: "box", x: 20, y: 20, rot: 0, params: { w: 30, d: 30, h: 35 } },
+    { uid: "tall", part: "box", x: 230, y: 430, rot: 0, params: { w: 30, d: 20, h: 45 } },
+  ];
+  const p = bay.problems(items, partOf, 350, { iec: false });
+  assert.ok(!p.low.some(m => m.includes("Z motor")), p.low.join());
+  assert.ok(p.tall.some(m => m.includes("Z motor (rear)")), p.tall.join());
+});

@@ -111,8 +111,15 @@ export class Plan2D {
       el("line", { x1: 0, y1: v, x2: s, y2: v, class: "grid" }, root);
     }
     for (const k of keepouts(state.size, { iec: state.iec })) {
-      el("rect", { x: k.x, y: k.y, width: k.w, height: k.d, class: "keepout" + (k.z0 > 40 ? " high" : "") }, root)
+      const cls = k.kind === "z" ? "zmotor" : "keepout" + (k.z0 > 40 ? " high" : "");
+      el("rect", { x: k.x, y: k.y, width: k.w, height: k.d, class: cls }, root)
         .appendChild(Object.assign(document.createElementNS(NS, "title"), { textContent: `${k.name}: ${k.z0}–${k.z1} mm above the panel` }));
+    }
+    // Z motors on top of the other keep-outs: the lead screw and a "Z"
+    for (const k of keepouts(state.size, { iec: state.iec })) {
+      if (!k.screw) continue;
+      el("circle", { cx: k.screw[0], cy: k.screw[1], r: 4, class: "zscrew" }, root);
+      text(k.screw[0], k.screw[1] - 14, "Z", { class: "zlabel", "text-anchor": "middle", "dominant-baseline": "middle" });
     }
     for (const h of frameHoles(state.size)) el("circle", { cx: h.x, cy: h.y, r: h.d / 2, class: "fhole" }, root);
 
