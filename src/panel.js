@@ -1,22 +1,33 @@
 // The bottom panel as something to make: every hole and cut-out, and the panel DXF. No DOM here.
-import { panelSide, CORNER_R, frameHoles, footprint, placedHoles, placedCutouts, holeLabel, drillSize } from "./bay.js";
+import { panelSide, CORNER_R, frameHoles, footprint, placedHoles, placedCutouts, holeLabel, drillSize, existingHole, existingCutout } from "./bay.js";
 
 // DXF layers and colours, as on Siboor's drawings (ACI 5 blue: through, 3 green: M3 tap, 1 red: M4 tap).
 export const LAYERS = { OUTLINE: 7, THROUGH: 5, M3_TAP: 3, M4_TAP: 1, M5_TAP: 6, CUTOUT: 7 };
 export const layerOf = h => (h.fix === "tap" ? `${h.thread}_TAP` : "THROUGH");
 
-// Everything drawn on the panel, in panel mm (front-left corner at 0, 0).
-export function panelDrawing(state, partOf) {
+// Everything drawn on the panel, in panel mm (front-left corner at 0, 0). With `stock` (the
+// stock panel, bay.js stockPanel), holes and cut-outs already in it are marked `existing`: a part
+// hole on one takes the existing hole's size and type, and unused ones are listed too.
+export function panelDrawing(state, partOf, stock = null) {
   const s = panelSide(state.size);
   const items = state.items.map(it => ({ it, part: partOf(it) })).filter(p => p.part);
   const name = ({ it, part }) => it.label || part.name;
   const holes = [
     ...frameHoles(state.size).map(h => ({ ...h, drill: drillSize(h), part: "Frame (already drilled)" })),
-    ...items.flatMap(p => placedHoles(p.it, p.part).map(h => ({ ...h, part: name(p) }))),
-  ].map(h => ({ ...h, label: holeLabel(h), layer: layerOf(h) }));
-  const cutouts = items.flatMap(p => placedCutouts(p.it, p.part).map(c => ({ ...c, part: name(p) })));
+    ...items.flatMap(p => placedHoles(p.it, p.part).map(h => {
+      const e = existingHole(h, stock);
+      return e ? { ...h, ...e, part: name(p) } : { ...h, part: name(p) };
+    })),
+  ];
+  if (stock) for (const e of stock.holes) if (!holes.some(h => h.existing && h.x === e.x && h.y === e.y)) holes.push({ ...e, part: "Stock panel (unused)" });
+  for (const h of holes) {
+    const label = h.existing ? `existing ${h.fix === "tap" ? h.thread + " tapped" : `Ø${h.d} through`}` : holeLabel(h);
+    Object.assign(h, { label, layer: layerOf(h) });
+  }
+  const cutouts = items.flatMap(p => placedCutouts(p.it, p.part).map(c => ({ ...c, existing: !!existingCutout(c, stock), part: name(p) })));
+  if (stock) for (const e of stock.cutouts) if (!cutouts.some(c => c.existing && existingCutout(c, { cutouts: [e] }))) cutouts.push({ ...e, part: "Stock panel (unused)" });
   const parts = items.map(p => ({ ...footprint(p.it, p.part), name: name(p) }));
-  return { s, r: CORNER_R, holes, cutouts, parts };
+  return { s, r: CORNER_R, holes, cutouts, parts, stock: !!stock };
 }
 
 // --- DXF (R12: lines, arcs and circles, which every laser and CAM program reads) -----------

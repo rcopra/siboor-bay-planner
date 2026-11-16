@@ -22,6 +22,11 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
   (no Siboor drawing), and Siboor's stock layout doesn't fit it as-is.
 - **Keep-outs and bay height** (78 mm, panel top to deck underside): measured on Siboor's 300 model
   (`tools/keepouts.py`). They keep their distance to the edges at every size.
+- **Stock panel holes** (`public/parts/stock-panel.json`, from `tools/stock_holes.py`): the 27 holes
+  Siboor's bottom panel comes with, read from their 300 and 350 drawings, plus the SSR cut-out. With
+  "Stock panel (pre-drilled)" the plan rings them, a part hole on one reuses it, new holes cutting into
+  one are flagged, and the drill template greys them out. Siboor's 3D model has the middle duct 3.1 mm
+  in front of its drilled holes; the stock layout follows the drawing. There's no 250 drawing.
 - **Z motors**: the three NEMA17 Z motors hang from the deck to 40 mm above the panel; the rear one's
   mount reaches 62 mm. Measured on Siboor's 300 model (`tools/keepouts.py` on the bed/Z group). The front
   two keep their distance to their corners; the rear one and its mount stay centred at the back.

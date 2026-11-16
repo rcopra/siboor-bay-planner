@@ -91,6 +91,10 @@ export class View3D {
     const items = state.items.map(it => ({ it, part: partOf(it) })).filter(p => p.part);
     const holes = [...frameHoles(state.size), ...items.flatMap(p => placedHoles(p.it, p.part))];
     const cutouts = items.flatMap(p => placedCutouts(p.it, p.part));
+    // the stock panel's holes and cut-out that no part uses (a shape can't take the same hole twice)
+    const stock = this.app.stock();
+    for (const h of stock?.holes ?? []) if (!holes.some(p => Math.hypot(p.x - h.x, p.y - h.y) < (p.drill ?? p.d) / 2 + h.d / 2)) holes.push(h);
+    for (const c of stock?.cutouts ?? []) if (!cutouts.some(p => p.x < c.x + c.w && c.x < p.x + p.w && p.y < c.y + c.h && c.y < p.y + p.h)) cutouts.push(c);
     const panel = new THREE.Mesh(
       new THREE.ExtrudeGeometry(panelShape(state.size, holes, cutouts), { depth: PANEL_THICKNESS, bevelEnabled: false, curveSegments: 24 }),
       new THREE.MeshStandardMaterial({ color: "#2d2f33", roughness: .9 }));

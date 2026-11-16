@@ -172,13 +172,23 @@ export function problems(items, partOf, size, opts) {
       if (gap < 2) out[a.owner].push(`a mounting hole is ${gap.toFixed(1)} mm from another part's hole`);
     }
   }
+  // On the stock panel, a new hole that would cut into one already there.
+  for (const h of holes) {
+    if (!opts?.stock || existingHole(h, opts.stock)) continue;
+    for (const e of opts.stock.holes) {
+      const gap = Math.hypot(h.x - e.x, h.y - e.y) - (h.drill + e.drill) / 2;
+      if (gap < 2) out[h.owner].push(`a new hole is ${Math.max(gap, 0).toFixed(1)} mm from an existing hole: line it up or move it`);
+    }
+  }
   for (const k in out) out[k] = [...new Set(out[k])];
   return out;
 }
 
 // --- Siboor's stock layout -------------------------------------------------------------
 
-// Positions from Siboor's 300 model, relative to the panel centre (Siboor keeps the parts
+// Positions from Siboor's 300 model, relative to the panel centre, checked against the holes
+// their 300 and 350 panel drawings drill (stockPanel). Siboor's model has the middle duct 3.1 mm
+// in front of its drilled holes; it sits on the holes here. (Siboor keeps the parts
 // centred at 350: the M8P and duct holes sit at the same offsets on both drawings).
 const STOCK = [
   ["lrs-350", "Power supply", -127.0, 6.0, 0],
@@ -186,7 +196,7 @@ const STOCK = [
   ["manta-m8p", "Manta M8P", -126.8, -137.9, 0],
   ["siboor-breakout", "Cable distribution box", 98.6, 42.5, 0],
   ["duct", "Rear duct", -157.6, 126.1, 0, { length: 315 }],
-  ["duct", "Middle duct", -157.3, -27.0, 0, { length: 314.3 }],
+  ["duct", "Middle duct", -157.3, -23.9, 0, { length: 314.3 }],   // the drawing's holes, 3.1 mm behind the model's duct
   ["duct", "Front duct", -157.6, -173.9, 0, { length: 315 }],
   ["duct", "Left duct", -182.5, -173.9, 90, { length: 325 }],
   ["duct", "Right duct", 157.5, -173.9, 90, { length: 325 }],
@@ -197,6 +207,43 @@ export function stockLayout(size) {
   return STOCK.map(([part, label, x, y, rot, params], i) => ({
     uid: `stock-${i}`, part, label, x: round1(x + c), y: round1(y + c), rot, params: params ? { ...params } : undefined,
   }));
+}
+
+// Where a placed part goes back to in Siboor's stock layout: the stock item it came from, else
+// the nearest stock spot for the same part. Null for a part Siboor doesn't use.
+export function stockSpot(item, size) {
+  const spots = stockLayout(size).filter(s => s.part === item.part);
+  if (!spots.length) return null;
+  const own = spots.find(s => s.uid === item.uid);
+  if (own) return own;
+  const d = s => Math.hypot(s.x - item.x, s.y - item.y) + (s.rot === item.rot ? 0 : 1000);
+  return spots.reduce((a, b) => (d(b) < d(a) ? b : a));
+}
+
+// --- the stock panel: what Siboor's bottom panel comes with --------------------------------
+
+// The SSR's heatsink cut-out, relative to the panel centre (Siboor's 300 and 350 drawings).
+const STOCK_CUTOUT = { x: 101.8, y: -103.5, w: 42, h: 32, r: 1 };
+export const REUSE_TOL = 0.5;   // a part hole this close to an existing hole uses it
+
+// `holesBySize`: public/parts/stock-panel.json (tools/stock_holes.py). Null where Siboor has no
+// drawing (250).
+export function stockPanel(holesBySize, size) {
+  const holes = holesBySize[size];
+  if (!holes) return null;
+  const c = panelSide(size) / 2;
+  return {
+    holes: holes.map(h => ({ ...h, drill: h.d, existing: true })),
+    cutouts: [{ ...STOCK_CUTOUT, x: STOCK_CUTOUT.x + c, y: STOCK_CUTOUT.y + c, existing: true }],
+  };
+}
+
+export function existingHole(hole, stock) {
+  return stock?.holes.find(s => Math.hypot(s.x - hole.x, s.y - hole.y) <= REUSE_TOL) ?? null;
+}
+
+export function existingCutout(cut, stock) {
+  return stock?.cutouts.find(s => Math.abs(s.x - cut.x) <= REUSE_TOL && Math.abs(s.y - cut.y) <= REUSE_TOL && Math.abs(s.w - cut.w) <= REUSE_TOL && Math.abs(s.h - cut.h) <= REUSE_TOL) ?? null;
 }
 
 export function round1(v) {

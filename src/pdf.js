@@ -26,23 +26,24 @@ function drawPanel(doc, d, map, k, full) {
   doc.setLineDashPattern([2, 1], 0);
   for (const c of d.cutouts) {
     const [x, y] = map(c.x, c.y + c.h);
+    doc.setDrawColor(c.existing ? 160 : 0);
     doc.roundedRect(x, y, c.w * k, c.h * k, c.r * k, c.r * k);
     if (full) {
-      doc.setTextColor(0); doc.setFontSize(7);
-      doc.text(`Cut-out ${c.w} × ${c.h} r${c.r}`, x + 1.5, y + 3.5);
+      doc.setTextColor(c.existing ? 140 : 0); doc.setFontSize(7);
+      doc.text(`${c.existing ? "Existing cut-out" : "Cut-out"} ${c.w} × ${c.h} r${c.r}`, x + 1.5, y + 3.5);
       doc.text(`corner X ${c.x.toFixed(1)}  Y ${c.y.toFixed(1)}`, x + 1.5, y + 6.5);
     }
   }
   doc.setLineDashPattern([], 0);
   for (const h of d.holes) {
-    const [x, y] = map(h.x, h.y), ink = INK[h.layer] ?? [0, 0, 0];
+    const [x, y] = map(h.x, h.y), ink = h.existing ? [150, 150, 150] : INK[h.layer] ?? [0, 0, 0];
     doc.setDrawColor(...ink); doc.setTextColor(...ink);
     const r = (h.drill / 2) * k;
     if (!full) { doc.setFillColor(...ink); doc.circle(x, y, Math.max(r, 0.7), "F"); continue; }
     doc.setLineWidth(0.25);
     doc.circle(x, y, r);
     doc.setLineWidth(0.15);
-    doc.line(x - r - 3, y, x + r + 3, y); doc.line(x, y - r - 3, x, y + r + 3);
+    if (!h.existing) { doc.line(x - r - 3, y, x + r + 3, y); doc.line(x, y - r - 3, x, y + r + 3); }
     doc.setFontSize(6.5);
     doc.text(h.label, x + r + 1.2, y - 1.2);
     doc.setFontSize(5.5);
@@ -81,6 +82,7 @@ export function drillTemplate(d, { paper = "A4", size, iec }) {
   const tiles = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) tiles.push({ r, c, x0: X0 + c * tw, y1: YTOP - r * th });
   const pages = 2 + tiles.length;
+  const nNew = d.holes.filter(h => !h.existing && !h.frame).length, cNew = d.cutouts.filter(c => !c.existing).length;
 
   // --- page 1: overview ---
   doc.setFontSize(14);
@@ -88,11 +90,14 @@ export function drillTemplate(d, { paper = "A4", size, iec }) {
   doc.setFontSize(8);
   const lines = [
     `Panel ${d.s} × ${d.s} mm, seen from above (its top face), front edge at the bottom. X, Y: mm from the front-left corner.`,
-    `${d.holes.length} holes, ${d.cutouts.length} cut-out(s). Pages 3 to ${pages} are the panel at 1:1.`,
+    d.stock
+      ? `Starting from Siboor's stock panel: ${nNew} new hole(s) and ${cNew} new cut-out(s) to make; existing ones are grey. Pages 3 to ${pages} are the panel at 1:1.`
+      : `${d.holes.length} holes, ${d.cutouts.length} cut-out(s). Pages 3 to ${pages} are the panel at 1:1.`,
     "1. Print at 100% (\"Actual size\", not \"Fit to page\"). Check the 100 mm bar on every page.",
     "2. Trim each page along its border where it meets another page; overlap and tape them so the crosses line up.",
     "3. Lay the sheet on the panel with its four frame holes over the existing ones; tape it down.",
     "4. Centre-punch every crosshair. Through holes: drill the size shown. Tapped holes: drill the size shown, then tap.",
+    ...(d.stock ? ["   Grey holes and cut-outs are already in the stock panel: no crosshair, nothing to do."] : []),
   ];
   lines.forEach((t, i) => doc.text(t, M, M + 12 + i * 4.2));
   let ly = M + 12 + lines.length * 4.2 + 3;
@@ -130,14 +135,18 @@ export function drillTemplate(d, { paper = "A4", size, iec }) {
   const row = cells => { cells.forEach((t, i) => doc.text(String(t), cx[i], y)); y += 4.4; };
   row(["#", "X", "Y", "Hole", "Part"]);
   doc.line(M, y - 3.2, pw - M, y - 3.2);
-  const sorted = [...d.holes].sort((a, b) => a.part.localeCompare(b.part) || a.y - b.y || a.x - b.x);
+  const sorted = [...d.holes].sort((a, b) => !!a.existing - !!b.existing || a.part.localeCompare(b.part) || a.y - b.y || a.x - b.x);
   sorted.forEach((h, i) => {
     if (y > ph - M) { doc.addPage(); y = M + 5; }
-    doc.setTextColor(...(INK[h.layer] ?? [0, 0, 0]));
+    doc.setTextColor(...(h.existing ? [150, 150, 150] : INK[h.layer] ?? [0, 0, 0]));
     row([i + 1, h.x.toFixed(1), h.y.toFixed(1), h.label, h.part]);
   });
   doc.setTextColor(0);
-  for (const c of d.cutouts) row(["", c.x.toFixed(1), c.y.toFixed(1), `cut-out ${c.w} × ${c.h} r${c.r} (X, Y: its corner)`, c.part]);
+  for (const c of d.cutouts) {
+    doc.setTextColor(c.existing ? 150 : 0);
+    row(["", c.x.toFixed(1), c.y.toFixed(1), `${c.existing ? "existing " : ""}cut-out ${c.w} × ${c.h} r${c.r} (X, Y: its corner)`, c.part]);
+  }
+  doc.setTextColor(0);
 
   // --- tiles at 1:1 ---
   tiles.forEach((t, i) => {

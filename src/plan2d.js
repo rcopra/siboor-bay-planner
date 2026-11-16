@@ -151,6 +151,13 @@ export class Plan2D {
       if (h > BAY_HEIGHT) t.textContent += " ⚠";
     }
 
+    // The stock panel's own holes and cut-out, on top: a part hole inside a ring reuses it.
+    const stock = this.app.stock();
+    for (const c of stock?.cutouts ?? []) el("path", { d: roundedRectPath(c.x, c.y, c.w, c.h, c.r), class: "stockcut" }, root);
+    for (const h of stock?.holes ?? []) {
+      el("circle", { cx: h.x, cy: h.y, r: h.d / 2 + 1.6, class: "stockhole" }, root)
+        .appendChild(Object.assign(document.createElementNS(NS, "title"), { textContent: `Existing hole: ${holeLabel(h)}` }));
+    }
     text(s / 2, -14, "FRONT", { class: "dim", "text-anchor": "middle" });
   }
 }

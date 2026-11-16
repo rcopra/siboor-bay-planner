@@ -1,4 +1,4 @@
-import { SIZES, BAY_HEIGHT, panelSide, problems, stockLayout, partSize, partHoles, holeLabel, round1 } from "./bay.js";
+import { SIZES, BAY_HEIGHT, panelSide, problems, stockLayout, stockSpot, stockPanel, existingHole, partSize, partHoles, placedHoles, holeLabel, round1 } from "./bay.js";
 import { Plan2D } from "./plan2d.js";
 import { View3D } from "./view3d.js";
 import { panelDrawing, panelDXF } from "./panel.js";
@@ -16,17 +16,21 @@ const COLOURS = { Power: "#f1d27a", Electronics: "#9cc3ef", Wiring: "#d8d8d8", O
 
 const library = [...(await (await fetch("parts/library.json")).json()), ...BUILTIN];
 const partById = new Map(library.map(p => [p.id, p]));
+const STOCK_HOLES = await (await fetch("parts/stock-panel.json")).json();
 
 const app = {
-  state: load() ?? { size: 350, iec: true, items: stockLayout(350), selected: null },
+  state: load() ?? { size: 350, iec: true, base: "stock", items: stockLayout(350), selected: null },
   problems: {},
   partOf: it => partById.get(it.part),
   colourOf: (part, it) => it?.colour || COLOURS[part.category] || "#ccc",
+  // the stock panel's holes when starting from it (null on a blank panel, or at 250: no drawing)
+  stock() { return this.state.base === "blank" ? null : stockPanel(STOCK_HOLES, this.state.size); },
   select(uid) { this.state.selected = uid; update(); },
   move(uid, x, y) { const it = find(uid); it.x = round1(x); it.y = round1(y); update(false); },
   commit() { save(); },
 };
-app.state.items = app.state.items.filter(it => partById.has(it.part));   // parts since removed from the library
+app.state.items = app.state.items.filter(it => partById.has(it.part));
+app.state.base ??= "stock";   // parts since removed from the library
 const plan = new Plan2D($("plan"), app);
 const view = new View3D($("three"), app);
 
@@ -39,7 +43,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 
 function update(persist = true) {
   const st = app.state;
-  app.problems = problems(st.items, app.partOf, st.size, { iec: st.iec });
+  app.problems = problems(st.items, app.partOf, st.size, { iec: st.iec, stock: app.stock() });
+  $("legend-stock").hidden = !app.stock();
+  $("base").options[0].textContent = STOCK_HOLES[st.size] ? "Stock panel (pre-drilled)" : `Stock panel (no Siboor drawing at ${st.size})`;
   if (!$("plan").hidden) plan.render();
   if (!$("three").hidden) view.render();
   renderStatus();
@@ -106,8 +112,16 @@ function renderSelected() {
   if (part.kind === "box") html += `<div class="row"><label>Size</label>${num("p.w", it.params.w, `min="1"`)}×${num("p.d", it.params.d, `min="1"`)}×${num("p.h", it.params.h, `min="1"`)}</div>`;
   const holes = partHoles(it, part), byKind = new Map();
   for (const hl of holes) byKind.set(holeLabel(hl), (byKind.get(holeLabel(hl)) || 0) + 1);
-  const holeText = holes.length ? [...byKind].map(([k, n]) => `${n} × ${k}`).join(", ") : "no holes";
+  let holeText = holes.length ? [...byKind].map(([k, n]) => `${n} × ${k}`).join(", ") : "no holes";
+  const stock = app.stock();
+  if (stock && holes.length) {
+    const reused = placedHoles(it, part).filter(h => existingHole(h, stock)).length;
+    holeText += reused === holes.length ? `<br><b>All on existing holes</b>: nothing to drill` : reused ? `<br>${reused} on existing holes, <b>${holes.length - reused} new</b>` : `<br><b>All new</b>: none on existing holes`;
+  }
   html += `<p class="info">${part.name !== nameOf(it) ? esc(part.name) + "<br>" : ""}${w} × ${d} mm, ${h} mm tall (bay ${BAY_HEIGHT} mm)<br>${holeText}${part.notes ? "<br>" + esc(part.notes) : ""}</p>`;
+  const spot = stockSpot(it, app.state.size);
+  const atSpot = spot && spot.x === it.x && spot.y === it.y && spot.rot === it.rot && (part.kind !== "duct" || spot.params.length === it.params.length);
+  if (spot) html += `<button id="tostock" class="wide" ${atSpot ? "disabled" : ""} title="Siboor's position${part.kind === "duct" ? " and length" : ""} for this part, on the stock panel's holes">${atSpot ? "✓ At its stock position" : "↺ Back to stock position"}</button>`;
   html += `<div class="actions"><button id="dup">Duplicate</button><button id="del">Remove</button></div>`;
   box.innerHTML = html;
   box.querySelectorAll("[data-k]").forEach(e => e.onchange = () => {
@@ -118,6 +132,11 @@ function renderSelected() {
     update();
   });
   box.querySelectorAll("[data-rot]").forEach(b => b.onclick = () => { it.rot = +b.dataset.rot; update(); });
+  if (spot && !atSpot) $("tostock").onclick = () => {
+    Object.assign(it, { x: spot.x, y: spot.y, rot: spot.rot });
+    if (part.kind === "duct") it.params.length = spot.params.length;
+    update();
+  };
   $("dup").onclick = duplicate;
   $("del").onclick = remove;
 }
@@ -160,6 +179,8 @@ $("size").onchange = e => {
   plan.fit();
   update();
 };
+$("base").value = app.state.base;
+$("base").onchange = e => { app.state.base = e.target.value; update(); };
 $("iec").checked = app.state.iec;
 $("iec").onchange = e => { app.state.iec = e.target.checked; update(); };
 
@@ -188,13 +209,13 @@ function clashesOk() {
 }
 $("dxf").onclick = () => {
   if (!clashesOk()) return;
-  download(new Blob([panelDXF(panelDrawing(app.state, app.partOf))], { type: "application/dxf" }), `bottom-panel-${app.state.size}.dxf`);
+  download(new Blob([panelDXF(panelDrawing(app.state, app.partOf, app.stock()))], { type: "application/dxf" }), `bottom-panel-${app.state.size}.dxf`);
 };
 for (const b of document.querySelectorAll("[data-pdf]")) {
   b.onclick = () => {
     if (!clashesOk()) return;
     const paper = b.dataset.pdf;
-    const doc = drillTemplate(panelDrawing(app.state, app.partOf), { paper, size: app.state.size, iec: app.state.iec });
+    const doc = drillTemplate(panelDrawing(app.state, app.partOf, app.stock()), { paper, size: app.state.size, iec: app.state.iec });
     download(doc.output("blob"), `drill-template-${app.state.size}-${paper}.pdf`);
   };
 }
@@ -203,8 +224,8 @@ $("loadfile").onchange = async e => {
   const data = JSON.parse(await e.target.files[0].text());
   const missing = data.items.filter(it => !partById.has(it.part)).map(it => it.part);
   if (missing.length) alert(`Skipped parts this planner doesn't have: ${[...new Set(missing)].join(", ")}`);
-  app.state = { size: data.size, iec: data.iec, items: data.items.filter(it => partById.has(it.part)), selected: null };
-  $("size").value = app.state.size; $("iec").checked = app.state.iec;
+  app.state = { size: data.size, iec: data.iec, base: data.base ?? "stock", items: data.items.filter(it => partById.has(it.part)), selected: null };
+  $("size").value = app.state.size; $("iec").checked = app.state.iec; $("base").value = app.state.base;
   plan.fit();
   update();
   e.target.value = "";

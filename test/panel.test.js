@@ -47,3 +47,39 @@ test("drill template tiles cover the panel", () => {
     assert.equal(doc.getNumberOfPages(), 2 + 6, paper);
   }
 });
+
+const STOCK_HOLES = JSON.parse(readFileSync(new URL("../public/parts/stock-panel.json", import.meta.url)));
+
+for (const size of [300, 350]) {
+  test(`stock layout on the stock panel (${size}): every hole and the cut-out already there`, () => {
+    const stock = bay.stockPanel(STOCK_HOLES, size);
+    const d = panelDrawing({ size, iec: true, items: bay.stockLayout(size) }, partOf, stock);
+    assert.deepEqual(d.holes.filter(h => !h.existing && !h.frame).map(h => `${h.part} ${h.x},${h.y}`), []);
+    assert.equal(d.holes.filter(h => h.part === "Stock panel (unused)").length, 0);
+    assert.deepEqual(d.cutouts.map(c => c.existing), [true]);
+    const p = bay.problems(bay.stockLayout(size), partOf, size, { iec: true, stock });
+    for (const [uid, msgs] of Object.entries(p)) assert.deepEqual(msgs, [], uid);
+  });
+}
+
+test("a part moved off its holes: new holes, unused stock holes, and back to stock", () => {
+  const size = 350, stock = bay.stockPanel(STOCK_HOLES, size);
+  const items = bay.stockLayout(size);
+  const psu = items.find(i => i.part === "lrs-350"), home = { x: psu.x, y: psu.y };
+  psu.y += 2;   // 2 mm back: every new hole cuts into the old ones
+  const d = panelDrawing({ size, items }, partOf, stock);
+  assert.equal(d.holes.filter(h => h.part === "Power supply" && !h.existing).length, 4);
+  assert.equal(d.holes.filter(h => h.part === "Stock panel (unused)").length, 4);
+  assert.ok(bay.problems(items, partOf, size, { stock })[psu.uid].some(m => m.includes("from an existing hole")));
+  const spot = bay.stockSpot(psu, size);
+  assert.deepEqual([spot.x, spot.y, spot.rot], [home.x, home.y, 0]);
+});
+
+test("a new duct goes back to the nearest stock duct spot, with its length", () => {
+  const duct = { uid: "new", part: "duct", x: 90, y: 400, rot: 0, params: { length: 200 } };
+  const spot = bay.stockSpot(duct, 350);
+  assert.equal(spot.label, "Rear duct");
+  assert.equal(spot.params.length, 315);
+  assert.equal(bay.stockSpot({ uid: "b", part: "box", x: 0, y: 0, rot: 0 }, 350), null);
+  assert.equal(bay.stockPanel(STOCK_HOLES, 250), null);
+});
