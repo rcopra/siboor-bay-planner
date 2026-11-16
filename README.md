@@ -1,0 +1,50 @@
+# Siboor Trident electronics bay planner
+
+Plan the electronics bay of a Siboor Trident June (250 / 300 / 350): drag parts onto the
+bottom panel, to scale, and see clashes with each other, the skirts, the feet, the frame,
+the stock IEC inlet and the deck.
+
+Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` checks the geometry.
+
+## Conventions
+
+- Positions are millimetres from the bottom panel's **front-left corner**, X to the right,
+  Y to the back, as seen from above. A part's X/Y is the front-left corner of its footprint.
+  A tape measure on the real panel reads the same numbers.
+- The layout is saved in the browser and can be saved/loaded as a `.json` file to share.
+
+## Where the numbers come from
+
+- **Bottom panel**: Siboor's panel drawings (`Panel/Trident_AWD_{300,350}_Model_PC_Panel_Drawing.dxf`
+  in github.com/Lzhikai/SIBOOR-Voron-Trident-June). The panel is a square of side
+  build size + 137 with 19.5 mm round corners and four 5.4 mm frame holes 12 mm in from the sides and
+  14 mm in from the front and back. 300 and 350 match the drawings. **250 is derived** from the same rule
+  (no Siboor drawing), and Siboor's stock layout doesn't fit it as-is.
+- **Keep-outs and bay height** (78 mm, panel top to deck underside): measured on Siboor's 300 model
+  (`tools/keepouts.py`). They keep their distance to the edges at every size.
+- **Stock parts** (`public/parts/`, written by `tools/extract_stock.py` from Siboor's model): PSU, SSR,
+  Manta M8P, cable distribution box. Mounting holes come from Siboor's pre-drilled base plate (`tools/holes.py`).
+  The M8P STEP is a light version (board outline, standoffs and fans, with no connectors). Its 3D view keeps the detail.
+- **Tapped or through holes** follow how each part is held, as on Siboor's 350 drawing
+  (blue through, green M3 tap, red M4 tap). The screw goes up through the panel into the part for the
+  PSU (Ø4.2 through) and frame (Ø5.4). Tapped holes are drilled at the ISO tap drill (M3 2.5, M4 3.3):
+  ducts and SSR M4, cable distribution box M3. Siboor's drawing has the Manta M8P through (Ø3.2);
+  here it is tapped M3 for its standoffs.
+
+## Stages
+
+1. Layout, library, clash warnings, 2D + 3D views
+2. Bottom panel DXF and a 1:1 printable drilling template (PDF) ← **here**
+3. Upload your own STEP parts
+4. Export the whole bay as one STEP
+
+## Credits
+
+- Stock parts, the bottom panel and its drawings come from Siboor's Trident June CAD,
+  github.com/Lzhikai/SIBOOR-Voron-Trident-June. They're converted here (moved into each part's
+  own frame, lightened) and credited in the app. If you're Siboor and want them removed, open an issue.
+- Inspired by FizzysTech's FT EMS planner (ft-ems-planner.netlify.app, github.com/akashrpatel/ft-ems-visualizer).
+
+## Deploying
+
+Every push to `main` builds the site and publishes it to GitHub Pages (`.github/workflows/pages.yml`).

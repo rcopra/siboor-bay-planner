@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Siboor Trident bay planner</title>
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+<header>
+  <b class="title">Bay planner</b>
+  <select id="size" title="Printer size"></select>
+  <label class="check" title="Siboor's power inlet and switch at the rear left"><input type="checkbox" id="iec"> Stock power inlet</label>
+  <span class="grow"></span>
+  <details class="menu">
+    <summary>New</summary>
+    <div>
+      <button id="stock">Siboor stock layout<small>The kit's parts where Siboor puts them</small></button>
+      <button id="clear">Empty panel</button>
+    </div>
+  </details>
+  <button id="load">Open…</button>
+  <button id="save">Save…</button>
+  <input type="file" id="loadfile" accept=".json" hidden>
+  <details class="menu right">
+    <summary class="primary">Export</summary>
+    <div>
+      <button id="dxf">Panel DXF<small>Outline, holes and cut-outs, for laser or CNC</small></button>
+      <button data-pdf="A4">Drill template, A4<small>Print at 100% and tape to the panel</small></button>
+      <button data-pdf="Letter">Drill template, Letter<small>Print at 100% and tape to the panel</small></button>
+    </div>
+  </details>
+</header>
+<main>
+  <aside id="library"></aside>
+  <section id="stage">
+    <svg id="plan"></svg>
+    <div id="three" hidden></div>
+    <div class="seg" id="views"><button id="view2d" class="on">Top</button><button id="view3d">3D</button></div>
+    <div id="legend">
+      <span><i class="dot through"></i>through</span><span><i class="dot M3"></i>M3 tap</span><span><i class="dot M4"></i>M4 tap</span>
+      <span class="keys">Drag to move · <b>R</b> rotate · <b>Del</b> remove</span>
+    </div>
+  </section>
+  <aside id="side">
+    <div id="status"></div>
+    <div id="selected"></div>
+    <details id="bomwrap"><summary>Parts list</summary><div id="bom"></div></details>
+  </aside>
+</main>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

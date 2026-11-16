@@ -1,0 +1,163 @@
+[
+ {
+  "name": "Power supply (Mean Well LRS-350)",
+  "category": "Power",
+  "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
+  "notes": "The same case for the 24 V and 48 V versions.",
+  "holes": [
+   {
+    "x": 32.62,
+    "y": 32.41,
+    "d": 4.2,
+    "thread": "M4",
+    "fix": "through"
+   },
+   {
+    "x": 32.62,
+    "y": 82.41,
+    "d": 4.2,
+    "thread": "M4",
+    "fix": "through"
+   },
+   {
+    "x": 182.62,
+    "y": 32.41,
+    "d": 4.2,
+    "thread": "M4",
+    "fix": "through"
+   },
+   {
+    "x": 182.62,
+    "y": 82.41,
+    "d": 4.2,
+    "thread": "M4",
+    "fix": "through"
+   }
+  ],
+  "id": "lrs-350",
+  "step": "parts/lrs-350.step",
+  "glb": "parts/lrs-350.glb",
+  "size": [
+   215,
+   115,
+   30
+  ],
+  "below": 0
+ },
+ {
+  "name": "Bed solid state relay",
+  "category": "Power",
+  "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
+  "notes": "Siboor's Delixi SSR. Its heatsink sits in a 42 × 32 cut-out through the panel.",
+  "holes": [
+   {
+    "x": 22.75,
+    "y": 5,
+    "d": 4.2,
+    "thread": "M4",
+    "fix": "tap"
+   },
+   {
+    "x": 22.75,
+    "y": 53.75,
+    "d": 4.2,
+    "thread": "M4",
+    "fix": "tap"
+   }
+  ],
+  "id": "ssr-delixi",
+  "step": "parts/ssr-delixi.step",
+  "glb": "parts/ssr-delixi.glb",
+  "size": [
+   45.5,
+   60.5,
+   31.5
+  ],
+  "below": 5,
+  "cutouts": [
+   {
+    "x": 1.72,
+    "y": 13.75,
+    "w": 42,
+    "h": 32,
+    "r": 1
+   }
+  ]
+ },
+ {
+  "name": "BTT Manta M8P 2.0",
+  "category": "Electronics",
+  "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
+  "notes": "On M3 × 10 standoffs, with Siboor's 2 × 4010 driver fan module. The STEP has the board outline only (no connectors) to keep it small.",
+  "holes": [
+   {
+    "x": 5,
+    "y": 8.34,
+    "d": 3.2,
+    "thread": "M3",
+    "fix": "tap"
+   },
+   {
+    "x": 5,
+    "y": 98.34,
+    "d": 3.2,
+    "thread": "M3",
+    "fix": "tap"
+   },
+   {
+    "x": 155,
+    "y": 98.34,
+    "d": 3.2,
+    "thread": "M3",
+    "fix": "tap"
+   },
+   {
+    "x": 165.5,
+    "y": 5.34,
+    "d": 3.2,
+    "thread": "M3",
+    "fix": "tap"
+   }
+  ],
+  "id": "manta-m8p",
+  "step": "parts/manta-m8p.step",
+  "glb": "parts/manta-m8p.glb",
+  "size": [
+   174.7,
+   103.1,
+   56.4
+  ],
+  "below": 0
+ },
+ {
+  "name": "Cable distribution box",
+  "category": "Electronics",
+  "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
+  "notes": "",
+  "holes": [
+   {
+    "x": 7.03,
+    "y": 15.94,
+    "d": 3.2,
+    "thread": "M3",
+    "fix": "tap"
+   },
+   {
+    "x": 41.48,
+    "y": 15.94,
+    "d": 3.2,
+    "thread": "M3",
+    "fix": "tap"
+   }
+  ],
+  "id": "siboor-breakout",
+  "step": "parts/siboor-breakout.step",
+  "glb": "parts/siboor-breakout.glb",
+  "size": [
+   48.5,
+   41.9,
+   15.1
+  ],
+  "below": 0
+ }
+]
