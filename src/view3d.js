@@ -22,6 +22,24 @@ function loadGLB(url) {
   return glbCache.get(url);
 }
 
+// An uploaded part's meshes (uploads.js, already Z up in mm) as one group; cached per part.
+const uploadCache = new WeakMap();
+function uploadGroup(part) {
+  if (!uploadCache.has(part)) {
+    const g = new THREE.Group();
+    for (const m of part.meshes) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(m.position, 3));
+      if (m.normal) geo.setAttribute("normal", new THREE.BufferAttribute(m.normal, 3)); else geo.computeVertexNormals();
+      geo.setIndex(new THREE.BufferAttribute(m.index, 1));
+      const c = m.color ? new THREE.Color(...m.color) : new THREE.Color("#b9a3dc");
+      g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: c, roughness: .7, side: THREE.DoubleSide })));
+    }
+    uploadCache.set(part, g);
+  }
+  return uploadCache.get(part);
+}
+
 export function panelShape(size, holes, cutouts) {
   const s = panelSide(size), r = CORNER_R, sh = new THREE.Shape();
   sh.moveTo(r, 0); sh.lineTo(s - r, 0); sh.absarc(s - r, r, r, -Math.PI / 2, 0);
@@ -118,7 +136,7 @@ export class View3D {
         obj = new THREE.Mesh(new THREE.BoxGeometry(w, d, h), new THREE.MeshStandardMaterial({ color: colourOf(part, it) }));
         obj.position.set(w / 2, d / 2, h / 2);
         const wrap = new THREE.Group(); wrap.add(obj); obj = wrap;
-      } else if (part.mesh) obj = part.mesh.clone();
+      } else if (part.meshes) obj = uploadGroup(part).clone();
       else obj = (await loadGLB(part.glb)).clone();
       if (token !== this.token) return;   // a newer render started
       const place = new THREE.Group();

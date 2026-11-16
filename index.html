@@ -25,6 +25,7 @@
   <button id="load">Open…</button>
   <button id="save">Save…</button>
   <input type="file" id="loadfile" accept=".json" hidden>
+  <input type="file" id="stepfile" accept=".step,.stp,.STEP,.STP" multiple hidden>
   <details class="menu right">
     <summary class="primary">Export</summary>
     <div>
@@ -39,6 +40,7 @@
   <section id="stage">
     <svg id="plan"></svg>
     <div id="three" hidden></div>
+    <div id="busy" hidden></div>
     <div id="legend">
       <span><i class="dot through"></i>through</span><span><i class="dot M3"></i>M3 tap</span><span><i class="dot M4"></i>M4 tap</span><span id="legend-stock"><i class="ring"></i>existing hole</span><span><i class="sq z"></i>Z motor</span>
       <span class="keys">Drag to move · <b>R</b> rotate · <b>Del</b> remove</span>

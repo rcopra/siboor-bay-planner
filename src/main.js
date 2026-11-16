@@ -5,6 +5,7 @@ import { panelDrawing, panelDXF } from "./panel.js";
 import { drillTemplate } from "./pdf.js";
 import { routeWires } from "./wires.js";
 import { Wiring } from "./wiring.js";
+import { UP, readStep, guessUp, toPart, allUploads, putUpload, deleteUpload, fileId, packUpload, unpackUpload } from "./uploads.js";
 
 const $ = id => document.getElementById(id);
 const KEY = "siboor-bay-planner/v1";
@@ -14,11 +15,16 @@ const BUILTIN = [
   { id: "duct", kind: "duct", name: "Wire duct (25 × 25)", category: "Wiring", notes: "Siboor's slotted duct. M4 tapped holes every 102 mm from its middle.", source: "Siboor Trident June" },
   { id: "box", kind: "box", name: "Custom box", category: "Other", notes: "A stand-in for a part with no CAD model.", source: "" },
 ];
-const COLOURS = { Power: "#f1d27a", Electronics: "#9cc3ef", Wiring: "#d8d8d8", Other: "#cfcfcf" };
+const COLOURS = { Power: "#f1d27a", Electronics: "#9cc3ef", Wiring: "#d8d8d8", Other: "#cfcfcf", Custom: "#c9a7ea" };
 
 const library = [...(await (await fetch("parts/library.json")).json()), ...BUILTIN];
 const partById = new Map(library.map(p => [p.id, p]));
 const STOCK_HOLES = await (await fetch("parts/stock-panel.json")).json();
+
+// Parts from people's own STEP files (uploads.js): id -> the stored upload.
+const uploads = new Map();
+function register(u) { uploads.set(u.id, u); partById.set(u.id, toPart(u)); }
+for (const u of await allUploads().catch(() => [])) register(u);
 
 const app = {
   state: load() ?? { size: 350, iec: true, base: "stock", items: stockLayout(350), selected: null },
@@ -76,7 +82,8 @@ function update(persist = true) {
 
 function renderLibrary() {
   const box = $("library");
-  box.innerHTML = "<h2>Add a part</h2>";
+  box.innerHTML = `<button id="upload" class="upload">＋ Add your own part<small>From a STEP file (.step, .stp), or drop one anywhere on the page</small></button><h2>Add a part</h2>`;
+  $("upload").onclick = () => $("stepfile").click();
   for (const p of library) {
     const b = document.createElement("button");
     b.className = "libitem";
@@ -85,6 +92,17 @@ function renderLibrary() {
     b.title = p.notes || "";
     b.onclick = () => add(p);
     box.appendChild(b);
+  }
+  if (uploads.size) {
+    box.insertAdjacentHTML("beforeend", `<h2>Your parts</h2>`);
+    for (const u of uploads.values()) {
+      const p = partById.get(u.id), row = document.createElement("div");
+      row.className = "yourpart";
+      row.innerHTML = `<button class="libitem"><span class="swatch" style="background:${COLOURS.Custom}"></span><span>${esc(p.name)}<small>${p.size.join(" × ")} mm</small></span></button><button class="x" title="Remove this part from the planner (and from the layout)">×</button>`;
+      row.querySelector(".libitem").onclick = () => add(p);
+      row.querySelector(".x").onclick = () => removeUpload(u.id);
+      box.appendChild(row);
+    }
   }
   box.insertAdjacentHTML("beforeend", `<p class="muted">Parts land in the middle of the panel.</p>
     <p class="credit">Stock parts, panel and drawings from <a href="https://github.com/Lzhikai/SIBOOR-Voron-Trident-June" target="_blank" rel="noopener">Siboor's Trident June CAD</a>.
@@ -137,6 +155,7 @@ function renderSelected() {
     holeText += reused === holes.length ? `<br><b>All on existing holes</b>: nothing to drill` : reused ? `<br>${reused} on existing holes, <b>${holes.length - reused} new</b>` : `<br><b>All new</b>: none on existing holes`;
   }
   html += `<p class="info">${part.name !== nameOf(it) ? esc(part.name) + "<br>" : ""}${w} × ${d} mm, ${h} mm tall (bay ${BAY_HEIGHT} mm)<br>${holeText}${part.notes ? "<br>" + esc(part.notes) : ""}</p>`;
+  if (part.kind === "upload") html += uploadEditor(uploads.get(part.id));
   const spot = stockSpot(it, app.state.size, app.stockOpts());
   const atSpot = spot && spot.x === it.x && spot.y === it.y && spot.rot === it.rot && (part.kind !== "duct" || spot.params.length === it.params.length);
   if (spot) html += `<button id="tostock" class="wide" ${atSpot ? "disabled" : ""} title="Siboor's position${part.kind === "duct" ? " and length" : ""} for this part, on the stock panel's holes">${atSpot ? "✓ At its stock position" : "↺ Back to stock position"}</button>`;
@@ -157,7 +176,93 @@ function renderSelected() {
   };
   $("dup").onclick = duplicate;
   $("del").onclick = remove;
+  if (part.kind === "upload") wireUploadEditor(box, uploads.get(part.id));
 }
+
+// --- your own parts ----------------------------------------------------------------------
+
+const HOLE_TYPES = {
+  "M3 tap": { thread: "M3", fix: "tap", d: 3.4 }, "M4 tap": { thread: "M4", fix: "tap", d: 4.5 }, "M5 tap": { thread: "M5", fix: "tap", d: 5.5 },
+  "M3 through": { thread: "M3", fix: "through", d: 3.4 }, "M4 through": { thread: "M4", fix: "through", d: 4.5 }, "M5 through": { thread: "M5", fix: "through", d: 5.5 },
+};
+const holeType = h => `${h.thread} ${h.fix}`;
+
+function uploadEditor(u) {
+  const rows = u.holes.map((h, i) => `<tr data-i="${i}"><td>${num("hx", h.x, `step="0.1"`)}</td><td>${num("hy", h.y, `step="0.1"`)}</td>` +
+    `<td><select data-ht>${Object.keys(HOLE_TYPES).map(k => `<option ${k === holeType(h) ? "selected" : ""}>${k}</option>`).join("")}</select></td><td><button data-hdel title="Remove this hole">×</button></td></tr>`).join("");
+  return `<div class="upedit">
+    <div class="row"><label>Part name</label><input type="text" data-pname value="${esc(u.name)}"></div>
+    <div class="row"><label>Up</label><select data-up>${Object.entries(UP).map(([k, v]) => `<option value="${k}" ${k === u.up ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+    <p class="muted">Mounting holes, in mm from the part's front-left corner as it sits at 0°:</p>
+    ${u.holes.length ? `<table class="holes"><tr class="muted"><td>X</td><td>Y</td><td>Hole</td><td></td></tr>${rows}</table>` : ""}
+    <button id="addhole">Add a hole</button>
+  </div>`;
+}
+
+function wireUploadEditor(box, u) {
+  const changed = async () => { await putUpload(u); register(u); renderLibrary(); update(); };
+  box.querySelector("[data-pname]").onchange = e => { u.name = e.target.value.trim() || u.name; changed(); };
+  box.querySelector("[data-up]").onchange = e => { u.up = e.target.value; changed(); };
+  box.querySelector("#addhole").onclick = () => {
+    const [w, d] = partById.get(u.id).size;
+    u.holes.push({ x: round1(w / 2), y: round1(d / 2), ...HOLE_TYPES["M3 tap"] });
+    changed();
+  };
+  box.querySelectorAll(".holes tr[data-i]").forEach(tr => {
+    const h = u.holes[+tr.dataset.i];
+    tr.querySelector("[data-k=hx]").onchange = e => { h.x = round1(parseFloat(e.target.value)); changed(); };
+    tr.querySelector("[data-k=hy]").onchange = e => { h.y = round1(parseFloat(e.target.value)); changed(); };
+    tr.querySelector("[data-ht]").onchange = e => { Object.assign(h, HOLE_TYPES[e.target.value]); changed(); };
+    tr.querySelector("[data-hdel]").onclick = () => { u.holes.splice(+tr.dataset.i, 1); changed(); };
+  });
+}
+
+function busy(msg) { $("busy").hidden = !msg; $("busy").textContent = msg || ""; }
+
+async function addStepFiles(files) {
+  for (const f of files) {
+    if (!/\.(step|stp)$/i.test(f.name)) { alert(`${f.name} isn't a STEP file (.step or .stp).`); continue; }
+    try {
+      const step = await f.arrayBuffer(), id = await fileId(step);
+      if (!uploads.has(id)) {
+        busy(`Reading ${f.name}…${readStep.loaded ? "" : " (the first file also loads the STEP reader, about 8 MB)"}`);
+        const meshes = await readStep(step);
+        readStep.loaded = true;
+        const u = { id, name: f.name.replace(/\.(step|stp)$/i, ""), up: guessUp(meshes), holes: [], step, meshes };
+        await putUpload(u);
+        register(u);
+      }
+      add(partById.get(id));
+    } catch (err) {
+      alert(`Couldn't read ${f.name}: ${err.message}`);
+    } finally {
+      busy(null);
+    }
+  }
+  renderLibrary();
+}
+
+async function removeUpload(id) {
+  const used = app.state.items.filter(i => i.part === id);
+  if (!confirm(`Remove "${partById.get(id).name}" from the planner?${used.length ? ` It's in this layout ${used.length} time(s); those go too.` : ""}`)) return;
+  const gone = new Set(used.map(i => i.uid));
+  app.state.items = app.state.items.filter(i => !gone.has(i.uid));
+  app.state.wires = app.state.wires.filter(w => !gone.has(w.a.uid) && !gone.has(w.b.uid));
+  await deleteUpload(id);
+  uploads.delete(id); partById.delete(id);
+  renderLibrary();
+  update();
+}
+
+$("stepfile").onchange = e => { addStepFiles([...e.target.files]); e.target.value = ""; };
+document.addEventListener("dragover", e => { if ([...e.dataTransfer.items].some(i => i.kind === "file")) { e.preventDefault(); document.body.classList.add("dropping"); } });
+document.addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("dropping"); });
+document.addEventListener("drop", e => {
+  e.preventDefault();
+  document.body.classList.remove("dropping");
+  const files = [...e.dataTransfer.files].filter(f => /\.(step|stp)$/i.test(f.name));
+  if (files.length) { showView("layout"); addStepFiles(files); }
+});
 
 function duplicate() {
   const it = find(app.state.selected);
@@ -231,8 +336,10 @@ $("clear").onclick = () => {
 function download(blob, name) {
   Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name }).click();
 }
-$("save").onclick = () => {
-  download(new Blob([JSON.stringify({ app: "siboor-bay-planner", version: 1, ...app.state }, null, 1)], { type: "application/json" }), `bay-${app.state.size}.json`);
+$("save").onclick = async () => {
+  const used = [...new Set(app.state.items.map(i => i.part))].filter(id => uploads.has(id));
+  const packed = await Promise.all(used.map(id => packUpload(uploads.get(id))));
+  download(new Blob([JSON.stringify({ app: "siboor-bay-planner", version: 1, ...app.state, uploads: packed }, null, 1)], { type: "application/json" }), `bay-${app.state.size}.json`);
 };
 function clashesOk() {
   const n = Object.values(app.problems).filter(m => m.length).length;
@@ -253,6 +360,16 @@ for (const b of document.querySelectorAll("[data-pdf]")) {
 $("load").onclick = () => $("loadfile").click();
 $("loadfile").onchange = async e => {
   const data = JSON.parse(await e.target.files[0].text());
+  for (const p of data.uploads ?? []) {
+    if (uploads.has(p.id)) continue;
+    try {
+      busy(`Reading ${p.name} from the layout file…`);
+      const u = await unpackUpload(p);
+      await putUpload(u);
+      register(u);
+    } catch (err) { alert(`Couldn't read the part ${p.name}: ${err.message}`); } finally { busy(null); }
+  }
+  renderLibrary();
   const missing = data.items.filter(it => !partById.has(it.part)).map(it => it.part);
   if (missing.length) alert(`Skipped parts this planner doesn't have: ${[...new Set(missing)].join(", ")}`);
   const items = data.items.filter(it => partById.has(it.part)), kept = new Set([...items.map(i => i.uid), "printer"]);

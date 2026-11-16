@@ -24,6 +24,15 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
   The wiring diagram lists what lands on each terminal.
 - **3D preview**: the bay with its parts and wires.
 
+## Your own parts
+
+"Add your own part" (or drop a `.step` / `.stp` on the page) reads the file in the browser with
+OpenCascade ([occt-import-js](https://github.com/kovacsv/occt-import-js), LGPL-2.1, loaded only when
+needed: ~3 MB compressed). Nothing is uploaded anywhere: the part is kept in the browser
+(IndexedDB) and goes into saved layouts, gzipped, so opening a shared layout brings it along. Set
+which way is up (guessed from the thinnest side) and its mounting holes in the part's panel; it
+then works like a stock part (clash checks, drill template, terminals, 3D).
+
 Terminals: the PSU's 9-way block (L, N, PE, −V ×3, +V ×3) and the SSR's four (L1, T1, A1+, A2−) are
 measured on Siboor's models (`tools/extract_stock.py`). The stock inlet's L, N, PE are approximate.
 
@@ -49,7 +58,8 @@ measured on Siboor's models (`tools/extract_stock.py`). The stock inlet's L, N, 
   Only parts taller than ~40 mm can hit them, so ducts and the PSU pass underneath.
 - **Stock parts** (`public/parts/`, written by `tools/extract_stock.py` from Siboor's model): PSU, SSR,
   Manta M8P, cable distribution box. Mounting holes come from Siboor's pre-drilled base plate (`tools/holes.py`).
-  The M8P STEP is a light version (board outline, standoffs and fans, with no connectors). Its 3D view keeps the detail.
+  The M8P is the board on its standoffs without Siboor's driver fan module; its STEP is a light version
+  (board outline and standoffs, no connectors) while its 3D view keeps the detail.
 - **Tapped or through holes** follow how each part is held, as on Siboor's 350 drawing
   (blue through, green M3 tap, red M4 tap). The screw goes up through the panel into the part for the
   PSU (Ø4.2 through) and frame (Ø5.4). Tapped holes are drilled at the ISO tap drill (M3 2.5, M4 3.3):
@@ -59,8 +69,8 @@ measured on Siboor's models (`tools/extract_stock.py`). The stock inlet's L, N, 
 ## Stages
 
 1. Layout, library, clash warnings, 2D + 3D views
-2. Bottom panel DXF and a 1:1 printable drilling template (PDF) ← **here**
-3. Upload your own STEP parts
+2. Bottom panel DXF and a 1:1 printable drilling template (PDF)
+3. Upload your own STEP parts (done); wiring view (done)
 4. Export the whole bay as one STEP
 
 ## Credits

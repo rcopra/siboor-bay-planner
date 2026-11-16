@@ -133,3 +133,16 @@ header .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; 
 .term-name { display: inline-block; min-width: 34px; font-weight: 600; }
 .terms { margin: 4px 0 8px; } .terms input[type=text] { width: 90px; } .terms button { padding: 0 7px; }
 #bomwrap[open] summary { margin-bottom: 4px; }
+
+/* your own parts */
+button.upload { display: block; width: 100%; text-align: left; margin: 0 0 16px; padding: 10px 12px; border: 1.5px dashed var(--accent); color: var(--accent); background: #f2f7fe; font-weight: 600; }
+button.upload:hover { background: #e6f0fd; }
+button.upload small { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }
+.yourpart { display: flex; gap: 4px; align-items: flex-start; }
+.yourpart .libitem { flex: 1; }
+.yourpart .x { padding: 4px 8px; color: var(--muted); }
+body.dropping #stage::after { content: "Drop a STEP file to add it as a part"; position: absolute; inset: 12px; border: 3px dashed var(--accent); border-radius: 12px; background: #0a62d014; display: grid; place-items: center; font-size: 18px; color: var(--accent); pointer-events: none; }
+#busy { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #fff; padding: 14px 20px; border-radius: 10px; box-shadow: 0 6px 24px #0003; font-size: 14px; }
+.upedit { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 6px; }
+.upedit input[type=text] { flex: 1; }
+.holes { margin: 4px 0 8px; } .holes input[type=number] { width: 56px; } .holes select { width: 96px; } .holes button { padding: 0 7px; }
