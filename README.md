@@ -48,3 +48,5 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
 ## Deploying
 
 Every push to `main` builds the site and publishes it to GitHub Pages (`.github/workflows/pages.yml`).
+The tests run first; if one fails, nothing is published and the live site stays as it was.
+Run `npm test` before pushing.
