@@ -38,73 +38,73 @@
   "step": "parts/lrs-350.step",
   "glb": "parts/lrs-350.glb",
   "size": [
-   215,
-   115,
-   30
+   215.0,
+   115.0,
+   30.0
   ],
   "below": 0,
   "terminals": [
    {
     "id": "L",
     "name": "L",
-    "x": 7,
-    "y": 11,
+    "x": 7.0,
+    "y": 11.0,
     "kind": "mains"
    },
    {
     "id": "N",
     "name": "N",
-    "x": 7,
+    "x": 7.0,
     "y": 20.5,
     "kind": "mains"
    },
    {
     "id": "PE",
     "name": "PE",
-    "x": 7,
-    "y": 30,
+    "x": 7.0,
+    "y": 30.0,
     "kind": "mains"
    },
    {
     "id": "-V1",
-    "name": "−V",
-    "x": 7,
+    "name": "\u2212V",
+    "x": 7.0,
     "y": 39.5,
     "kind": "dc"
    },
    {
     "id": "-V2",
-    "name": "−V",
-    "x": 7,
-    "y": 49,
+    "name": "\u2212V",
+    "x": 7.0,
+    "y": 49.0,
     "kind": "dc"
    },
    {
     "id": "-V3",
-    "name": "−V",
-    "x": 7,
+    "name": "\u2212V",
+    "x": 7.0,
     "y": 58.5,
     "kind": "dc"
    },
    {
     "id": "+V1",
     "name": "+V",
-    "x": 7,
-    "y": 68,
+    "x": 7.0,
+    "y": 68.0,
     "kind": "dc"
    },
    {
     "id": "+V2",
     "name": "+V",
-    "x": 7,
+    "x": 7.0,
     "y": 77.5,
     "kind": "dc"
    },
    {
     "id": "+V3",
     "name": "+V",
-    "x": 7,
-    "y": 87,
+    "x": 7.0,
+    "y": 87.0,
     "kind": "dc"
    }
   ]
@@ -113,11 +113,11 @@
   "name": "Bed solid state relay",
   "category": "Power",
   "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
-  "notes": "Siboor's Delixi SSR. Its heatsink sits in a 42 × 32 cut-out through the panel.",
+  "notes": "Siboor's Delixi SSR. Its heatsink sits in a 42 \u00d7 32 cut-out through the panel.",
   "holes": [
    {
     "x": 22.75,
-    "y": 5,
+    "y": 5.0,
     "d": 4.2,
     "thread": "M4",
     "fix": "tap"
@@ -138,14 +138,14 @@
    60.5,
    31.5
   ],
-  "below": 5,
+  "below": 5.0,
   "cutouts": [
    {
     "x": 1.72,
     "y": 13.75,
-    "w": 42,
-    "h": 32,
-    "r": 1
+    "w": 42.0,
+    "h": 32.0,
+    "r": 1.0
    }
   ],
   "terminals": [
@@ -153,19 +153,19 @@
     "id": "L1",
     "name": "L1",
     "x": 9.3,
-    "y": 54,
+    "y": 54.0,
     "kind": "mains"
    },
    {
     "id": "T1",
     "name": "T1",
     "x": 36.3,
-    "y": 54,
+    "y": 54.0,
     "kind": "mains"
    },
    {
     "id": "A2-",
-    "name": "A2−",
+    "name": "A2\u2212",
     "x": 9.3,
     "y": 6.5,
     "kind": "dc"
@@ -183,24 +183,24 @@
   "name": "BTT Manta M8P 2.0",
   "category": "Electronics",
   "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
-  "notes": "On M3 × 10 standoffs, with Siboor's 2 × 4010 driver fan module. The STEP has the board outline only (no connectors) to keep it small.",
+  "notes": "On M3 \u00d7 10 standoffs, without Siboor's driver fan module. The STEP has the board outline only (no connectors) to keep it small.",
   "holes": [
    {
-    "x": 5,
+    "x": 5.0,
     "y": 8.34,
     "d": 3.2,
     "thread": "M3",
     "fix": "tap"
    },
    {
-    "x": 5,
+    "x": 5.0,
     "y": 98.34,
     "d": 3.2,
     "thread": "M3",
     "fix": "tap"
    },
    {
-    "x": 155,
+    "x": 155.0,
     "y": 98.34,
     "d": 3.2,
     "thread": "M3",
@@ -220,7 +220,7 @@
   "size": [
    174.7,
    103.1,
-   56.4
+   27.1
   ],
   "below": 0
  },
@@ -253,6 +253,6 @@
    41.9,
    15.1
   ],
-  "below": 0
+  "below": 0.0
  }
 ]

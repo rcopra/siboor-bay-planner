@@ -127,9 +127,16 @@ def light(shape, max_faces=5000, box_faces=300, board=1.6):
     return out
 
 
-def siboor(pid, label, name, category, colour=None, extra=(), notes="", min_size=None, lighten=False):
+def siboor(pid, label, name, category, colour=None, extra=(), notes="", min_size=None, lighten=False, drop=()):
+    """`drop`: labels of the node's children to leave out."""
     node, outer = find(bay, label, bay_outer)
-    parts = [world(node, outer)] + [world(*find(bay, e, bay_outer)) for e in extra]
+    if drop:
+        kids = [c for c in node.children if c.label not in drop]
+        assert len(kids) == len(node.children) - len(drop), [c.label for c in node.children]
+        first = [world(c, outer * node.location) for c in kids]
+    else:
+        first = [world(node, outer)]
+    parts = first + [world(*find(bay, e, bay_outer)) for e in extra]
     if min_size:
         parts = [slim(p, min_size) for p in parts]
     shape = bd.Compound(children=parts, label=name) if len(parts) > 1 else parts[0]
@@ -151,8 +158,8 @@ m["cutouts"] = [dict(x=round(101.8 - origin[0], 2), y=round(-103.5 - origin[1], 
 library.append(m)
 
 m, _ = siboor("manta-m8p", "Mainboard-Assembly", "BTT Manta M8P 2.0", "Electronics",
-              extra=("Component641", "Component1561"),
-              notes="On M3 × 10 standoffs, with Siboor's 2 × 4010 driver fan module. The STEP has the "
+              drop=("Motherboard driver cooling module",),
+              notes="On M3 × 10 standoffs, without Siboor's driver fan module. The STEP has the "
                     "board outline only (no connectors) to keep it small.", min_size=4, lighten=True)
 library.append(m)
 
