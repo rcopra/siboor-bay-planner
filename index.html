@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Siboor Trident bay planner</title>
 <link rel="stylesheet" href="/src/style.css">
+<script>
+  // the theme picked here before, else the system's; set before the page draws, so it doesn't flash
+  document.documentElement.dataset.theme = localStorage.getItem("siboor-bay-planner/theme")
+    ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+</script>
 </head>
 <body>
 <header>
@@ -34,6 +39,7 @@
       <button data-pdf="Letter">Drill template, Letter<small>Print at 100% and tape to the panel</small></button>
     </div>
   </details>
+  <button id="theme"></button>
 </header>
 <main>
   <aside id="library"></aside>

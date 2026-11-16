@@ -443,6 +443,22 @@ function showView(v) {
   update(false);
 }
 for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => showView(b.dataset.view);
+
+// Light or dark: the system's until one is picked here (index.html sets it before the page draws).
+const THEME = "siboor-bay-planner/theme", dark = matchMedia("(prefers-color-scheme: dark)");
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $("theme").textContent = t === "dark" ? "☀︎" : "☾";
+  $("theme").title = t === "dark" ? "Switch to the light theme" : "Switch to the dark theme";
+  view.theme();
+}
+setTheme(document.documentElement.dataset.theme);
+$("theme").onclick = () => {
+  const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME, t);
+  setTheme(t);
+};
+dark.addEventListener("change", e => { if (!localStorage.getItem(THEME)) setTheme(e.matches ? "dark" : "light"); });
 $("autoroute").checked = !!app.state.autoRoute;
 $("autoroute").onchange = e => { app.state.autoRoute = e.target.checked; update(); };
 

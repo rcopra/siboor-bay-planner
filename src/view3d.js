@@ -73,7 +73,7 @@ export class View3D {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(this.renderer.domElement);
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("#eef0f3");
+    this.theme();
     this.camera = new THREE.PerspectiveCamera(35, 1, 1, 5000);
     this.camera.up.set(0, 0, 1);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -85,6 +85,11 @@ export class View3D {
     new ResizeObserver(() => this.resize()).observe(el);
     const loop = () => { requestAnimationFrame(loop); if (!this.el.hidden) { this.controls.update(); this.renderer.render(this.scene, this.camera); } };
     loop();
+  }
+
+  // the background follows the page's light or dark theme
+  theme() {
+    this.scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--stage").trim());
   }
 
   resize() {
