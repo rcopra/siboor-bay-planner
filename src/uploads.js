@@ -1,8 +1,9 @@
 // Parts people add from their own STEP files. They never leave the browser: kept in IndexedDB,
 // and written into a saved layout (gzipped STEP) so a shared layout brings them along.
 //
-// A stored upload: { id, name, up, holes, step: ArrayBuffer, meshes } with the meshes as read
-// (the file's own axes). `up` picks which of the file's axes points up in the bay.
+// A stored upload: { id, name, up, holes, terminals, step: ArrayBuffer, meshes } with the meshes as
+// read (the file's own axes). `up` picks which of the file's axes points up in the bay. Holes and
+// terminals are in the part's frame, like a stock part's, so every copy placed has them.
 
 export const UP = { "+Z": "Z up (as drawn)", "-Z": "Z down", "+Y": "Y up", "-Y": "Y down", "+X": "X up", "-X": "X down" };
 
@@ -62,7 +63,7 @@ export function guessUp(meshes) {
 export function toPart(u) {
   const { meshes, size } = orient(u.meshes, u.up);
   return {
-    id: u.id, kind: "upload", name: u.name, category: "Custom", size, holes: u.holes ?? [], meshes,
+    id: u.id, kind: "upload", name: u.name, category: "Custom", size, holes: u.holes ?? [], terminals: u.terminals ?? [], meshes,
     notes: "Your own STEP file. It stays in this browser and goes into saved layouts.", source: "Uploaded",
   };
 }
@@ -110,11 +111,11 @@ const toB64 = bytes => { let s = ""; for (let i = 0; i < bytes.length; i += 0x80
 const fromB64 = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
 export async function packUpload(u) {
-  return { id: u.id, name: u.name, up: u.up, holes: u.holes, stepGz: toB64(await gzip(u.step)) };
+  return { id: u.id, name: u.name, up: u.up, holes: u.holes, terminals: u.terminals ?? [], stepGz: toB64(await gzip(u.step)) };
 }
 
 // A packed upload back into a stored one (reads its STEP again).
 export async function unpackUpload(p) {
   const step = await gunzip(fromB64(p.stepGz));
-  return { id: p.id, name: p.name, up: p.up, holes: p.holes ?? [], step, meshes: await readStep(step) };
+  return { id: p.id, name: p.name, up: p.up, holes: p.holes ?? [], terminals: p.terminals ?? [], step, meshes: await readStep(step) };
 }

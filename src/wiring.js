@@ -21,6 +21,13 @@ export class Wiring {
   terms() { return allTerminals(this.st, this.app.partOf); }
   wire(wid = this.st.wireSel) { return this.st.wires.find(w => w.id === wid); }
   routedOf(wid) { return this.app.routed.wires.find(r => r.wire.id === wid); }
+  // The terminals added by hand to a placed part, and how to save a change to them: an uploaded
+  // part keeps them itself (every copy has them, and they go with it in saved layouts).
+  editable(item) {
+    const u = this.app.uploadOf(this.app.partOf(item));
+    if (u) return { list: (u.terminals ??= []), save: () => this.app.uploadChanged(u), mine: w => this.st.items.find(i => i.uid === w.uid)?.part === u.id };
+    return { list: (item.terminals ??= []), save: () => this.app.update(), mine: w => w.uid === item.uid };
+  }
 
   // --- drawing on the plan -------------------------------------------------------------------
 
@@ -107,8 +114,12 @@ export class Wiring {
       return true;
     }
     if (item) {
-      this.st.wireSel = null; this.st.wirePart = item.dataset.uid;
-      this.app.update(false);
+      // redraw only when the selection changes: a redraw removes the element under the pointer,
+      // and then the browser drops the click (and so a double-click to add a terminal)
+      if (this.st.wireSel || this.st.wirePart !== item.dataset.uid) {
+        this.st.wireSel = null; this.st.wirePart = item.dataset.uid;
+        this.app.update(false);
+      }
       return true;
     }
     if (this.st.wireSel || this.st.wirePart) { this.st.wireSel = null; this.st.wirePart = null; this.app.update(false); }
@@ -178,11 +189,11 @@ export class Wiring {
   addTerminal(uid, mx, my) {
     const item = this.st.items.find(i => i.uid === uid), part = this.app.partOf(item);
     const [w, d] = partSize(item, part), [x, y] = fromPanel(item, w, d, mx, my);
-    const n = (item.terminals?.length ?? 0) + 1;
-    const t = { id: "c" + id(), name: `T${n}`, x: round1(x), y: round1(y), kind: "dc" };
-    (item.terminals ??= []).push(t);
+    const own = this.editable(item);
+    const t = { id: "c" + id(), name: `T${own.list.length + 1}`, x: round1(x), y: round1(y), kind: "dc" };
+    own.list.push(t);
     this.st.wirePart = uid; this.st.wireSel = null;
-    this.app.update();
+    own.save();
     return t;
   }
 
@@ -255,25 +266,25 @@ export class Wiring {
   }
 
   renderTerminals(box, item) {
-    const part = this.app.partOf(item);
+    const part = this.app.partOf(item), own = this.editable(item), upload = part.kind === "upload";
     const kinds = k => `<select data-kind><option value="dc" ${k === "dc" ? "selected" : ""}>low voltage</option><option value="mains" ${k === "mains" ? "selected" : ""}>mains</option></select>`;
     const rows = [
-      ...(part.terminals ?? []).map(t => `<tr><td>${esc(t.name)}</td><td class="muted">${t.kind === "mains" ? "mains" : "low voltage"}</td><td></td></tr>`),
-      ...(item.terminals ?? []).map(t => `<tr data-t="${t.id}"><td><input type="text" data-name value="${esc(t.name)}"></td><td>${kinds(t.kind)}</td><td><button data-del title="Remove this terminal and its wires">×</button></td></tr>`),
+      ...(upload ? [] : part.terminals ?? []).map(t => `<tr><td>${esc(t.name)}</td><td class="muted">${t.kind === "mains" ? "mains" : "low voltage"}</td><td></td></tr>`),
+      ...own.list.map(t => `<tr data-t="${t.id}"><td><input type="text" data-name value="${esc(t.name)}"></td><td>${kinds(t.kind)}</td><td><button data-del title="Remove this terminal and its wires">×</button></td></tr>`),
     ];
     box.innerHTML = `<p><b>${esc(item.label || part.name)}</b>: terminals</p>
       ${rows.length ? `<table class="terms">${rows.join("")}</table>` : `<p class="muted">None yet.</p>`}
       <button id="tadd" class="wide">${this.placing === item.uid ? "Now click on the part…" : "Add a terminal"}</button>
-      <p class="muted">${part.terminals?.length ? "Terminals from the part's model can't be edited. " : ""}Tip: double-click on a part to add a terminal right there.</p>`;
+      <p class="muted">${upload ? "These belong to the part: every copy of it has them. " : part.terminals?.length ? "Terminals from the part's model can't be edited. " : ""}Tip: double-click on a part to add a terminal right there.</p>`;
     box.querySelector("#tadd").onclick = () => { this.placing = item.uid; this.renderSelected(box); };
     box.querySelectorAll("tr[data-t]").forEach(tr => {
-      const t = item.terminals.find(x => x.id === tr.dataset.t);
-      tr.querySelector("[data-name]").onchange = e => { t.name = e.target.value.trim() || t.name; this.app.update(); };
-      tr.querySelector("[data-kind]").onchange = e => { t.kind = e.target.value; this.app.update(); };
+      const t = own.list.find(x => x.id === tr.dataset.t);
+      tr.querySelector("[data-name]").onchange = e => { t.name = e.target.value.trim() || t.name; own.save(); };
+      tr.querySelector("[data-kind]").onchange = e => { t.kind = e.target.value; own.save(); };
       tr.querySelector("[data-del]").onclick = () => {
-        item.terminals = item.terminals.filter(x => x !== t);
-        this.st.wires = this.st.wires.filter(w => !(w.a.uid === item.uid && w.a.t === t.id) && !(w.b.uid === item.uid && w.b.t === t.id));
-        this.app.update();
+        own.list.splice(own.list.indexOf(t), 1);
+        this.st.wires = this.st.wires.filter(w => !(own.mine(w.a) && w.a.t === t.id) && !(own.mine(w.b) && w.b.t === t.id));
+        own.save();
       };
     });
   }

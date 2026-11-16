@@ -24,6 +24,18 @@ const STOCK_HOLES = await (await fetch("parts/stock-panel.json")).json();
 // Parts from people's own STEP files (uploads.js): id -> the stored upload.
 const uploads = new Map();
 function register(u) { uploads.set(u.id, u); partById.set(u.id, toPart(u)); }
+// Terminals added by hand to a placed copy of an upload (before they were kept with the part)
+// move onto the upload, keeping their ids, so the wires on them stay put.
+function adoptTerminals() {
+  for (const it of app.state.items) {
+    const u = uploads.get(it.part);
+    if (!u || !it.terminals?.length) continue;
+    u.terminals ??= [];
+    for (const t of it.terminals) if (!u.terminals.some(x => x.id === t.id)) u.terminals.push(t);
+    delete it.terminals;
+    register(u); putUpload(u); save();
+  }
+}
 for (const u of await allUploads().catch(() => [])) register(u);
 
 const app = {
@@ -39,12 +51,15 @@ const app = {
   move(uid, x, y) { const it = find(uid); it.x = round1(x); it.y = round1(y); update(false); },
   commit() { save(); },
   update: (persist = true) => update(persist),
+  uploadOf: part => uploads.get(part?.id),
+  uploadChanged(u) { register(u); update(); putUpload(u); },   // its terminals edited in the wiring view
   view: "layout",           // layout | wiring | 3d
   routed: { wires: [], problems: {} },
 };
 app.state.items = app.state.items.filter(it => partById.has(it.part));   // parts since removed from the library
 app.state.base ??= "stock";
 app.state.wires ??= [];
+adoptTerminals();
 app.wiring = new Wiring(app);
 const plan = new Plan2D($("plan"), app);
 const view = new View3D($("three"), app);
@@ -375,6 +390,7 @@ $("loadfile").onchange = async e => {
   const items = data.items.filter(it => partById.has(it.part)), kept = new Set([...items.map(i => i.uid), "printer"]);
   app.state = { size: data.size, iec: data.iec, base: data.base ?? "stock", items, selected: null,
     wires: (data.wires ?? []).filter(w => kept.has(w.a.uid) && kept.has(w.b.uid)), autoRoute: !!data.autoRoute };
+  adoptTerminals();
   $("size").value = app.state.size; $("iec").checked = app.state.iec; $("base").value = app.state.base;
   plan.fit();
   update();

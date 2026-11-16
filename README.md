@@ -31,10 +31,16 @@ OpenCascade ([occt-import-js](https://github.com/kovacsv/occt-import-js), LGPL-2
 needed: ~3 MB compressed). Nothing is uploaded anywhere: the part is kept in the browser
 (IndexedDB) and goes into saved layouts, gzipped, so opening a shared layout brings it along. Set
 which way is up (guessed from the thinnest side) and its mounting holes in the part's panel; it
-then works like a stock part (clash checks, drill template, terminals, 3D).
+then works like a stock part (clash checks, drill template, terminals, 3D). Terminals added to it in
+the Wiring view (double-click where its connector is) belong to the part, like its holes: every copy
+placed has them, and they go with it in saved layouts. A STEP file can't say where the terminals
+are, so they're always added by hand.
 
 Terminals: the PSU's 9-way block (L, N, PE, −V ×3, +V ×3) and the SSR's four (L1, T1, A1+, A2−) are
-measured on Siboor's models (`tools/extract_stock.py`). The stock inlet's L, N, PE are approximate.
+measured on Siboor's models (`tools/extract_stock.py`). The Manta M8P's 8-way power block and
+HE0–HE3 are named from BTT's V2.0 pinout, at the screws in Siboor's model. The distribution box is
+Siboor's three-in nine-out mains block (N, PE, L in, three out of each, per Siboor's wiring diagram);
+the N, PE, L order along it is as drawn there. The stock inlet's L, N, PE are approximate.
 
 ## Where the numbers come from
 
