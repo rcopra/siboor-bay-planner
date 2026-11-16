@@ -13,6 +13,20 @@ Run it: `npm install`, then `npm run dev` and open the printed URL. `npm test` c
   A tape measure on the real panel reads the same numbers.
 - The layout is saved in the browser and can be saved/loaded as a `.json` file to share.
 
+## Views
+
+- **Layout**: place parts on the bottom panel; clash checks; panel DXF and drill template.
+- **Wiring**: wires between terminals, using the current layout. Click a terminal, click to add
+  bends, click another terminal to finish. "Auto-route" runs a wire through the ducts instead (shortest
+  way in, along and out, going round other parts) and re-routes it when the layout changes. Parts
+  without terminals in the library get them by double-clicking where their connector is. It warns where
+  mains and low-voltage wires share a duct or cross outside one, or a wire joins mains to low voltage.
+  The wiring diagram lists what lands on each terminal.
+- **3D preview**: the bay with its parts and wires.
+
+Terminals: the PSU's 9-way block (L, N, PE, −V ×3, +V ×3) and the SSR's four (L1, T1, A1+, A2−) are
+measured on Siboor's models (`tools/extract_stock.py`). The stock inlet's L, N, PE are approximate.
+
 ## Where the numbers come from
 
 - **Bottom panel**: Siboor's panel drawings (`Panel/Trident_AWD_{300,350}_Model_PC_Panel_Drawing.dxf`

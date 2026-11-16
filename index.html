@@ -9,6 +9,8 @@
 <body>
 <header>
   <b class="title">Bay planner</b>
+  <span class="tabs" id="tabs"><button data-view="layout" class="on">Layout</button><button data-view="wiring">Wiring</button><button data-view="3d">3D preview</button></span>
+  <span class="sep"></span>
   <select id="size" title="Printer size"></select>
   <select id="base" title="Start from Siboor's pre-drilled bottom panel, or a blank one you drill or cut from scratch"><option value="stock">Stock panel (pre-drilled)</option><option value="stock180">Stock panel, turned 180°</option><option value="blank">Blank panel</option></select>
   <label class="check" title="Siboor's power inlet and switch at the rear left"><input type="checkbox" id="iec"> Stock power inlet</label>
@@ -37,10 +39,13 @@
   <section id="stage">
     <svg id="plan"></svg>
     <div id="three" hidden></div>
-    <div class="seg" id="views"><button id="view2d" class="on">Top</button><button id="view3d">3D</button></div>
     <div id="legend">
       <span><i class="dot through"></i>through</span><span><i class="dot M3"></i>M3 tap</span><span><i class="dot M4"></i>M4 tap</span><span id="legend-stock"><i class="ring"></i>existing hole</span><span><i class="sq z"></i>Z motor</span>
       <span class="keys">Drag to move · <b>R</b> rotate · <b>Del</b> remove</span>
+    </div>
+    <div id="wlegend" hidden>
+      <span><i class="dot mains"></i>mains terminal</span><span><i class="dot lv"></i>low-voltage terminal</span><span><i class="glow"></i>mains wire</span>
+      <label class="check"><input type="checkbox" id="autoroute"> Auto-route new wires through the ducts</label>
     </div>
   </section>
   <aside id="side">

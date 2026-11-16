@@ -42,7 +42,72 @@
    115,
    30
   ],
-  "below": 0
+  "below": 0,
+  "terminals": [
+   {
+    "id": "L",
+    "name": "L",
+    "x": 7,
+    "y": 11,
+    "kind": "mains"
+   },
+   {
+    "id": "N",
+    "name": "N",
+    "x": 7,
+    "y": 20.5,
+    "kind": "mains"
+   },
+   {
+    "id": "PE",
+    "name": "PE",
+    "x": 7,
+    "y": 30,
+    "kind": "mains"
+   },
+   {
+    "id": "-V1",
+    "name": "−V",
+    "x": 7,
+    "y": 39.5,
+    "kind": "dc"
+   },
+   {
+    "id": "-V2",
+    "name": "−V",
+    "x": 7,
+    "y": 49,
+    "kind": "dc"
+   },
+   {
+    "id": "-V3",
+    "name": "−V",
+    "x": 7,
+    "y": 58.5,
+    "kind": "dc"
+   },
+   {
+    "id": "+V1",
+    "name": "+V",
+    "x": 7,
+    "y": 68,
+    "kind": "dc"
+   },
+   {
+    "id": "+V2",
+    "name": "+V",
+    "x": 7,
+    "y": 77.5,
+    "kind": "dc"
+   },
+   {
+    "id": "+V3",
+    "name": "+V",
+    "x": 7,
+    "y": 87,
+    "kind": "dc"
+   }
+  ]
  },
  {
   "name": "Bed solid state relay",
@@ -81,6 +146,36 @@
     "w": 42,
     "h": 32,
     "r": 1
+   }
+  ],
+  "terminals": [
+   {
+    "id": "L1",
+    "name": "L1",
+    "x": 9.3,
+    "y": 54,
+    "kind": "mains"
+   },
+   {
+    "id": "T1",
+    "name": "T1",
+    "x": 36.3,
+    "y": 54,
+    "kind": "mains"
+   },
+   {
+    "id": "A2-",
+    "name": "A2−",
+    "x": 9.3,
+    "y": 6.5,
+    "kind": "dc"
+   },
+   {
+    "id": "A1+",
+    "name": "A1+",
+    "x": 36.3,
+    "y": 6.5,
+    "kind": "dc"
    }
   ]
  },

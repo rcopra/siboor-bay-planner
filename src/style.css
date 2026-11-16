@@ -96,3 +96,40 @@ td.n { text-align: right; width: 28px; color: var(--muted); }
 .ring { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #555; margin-right: 4px; vertical-align: -1px; }
 button.wide { display: block; width: 100%; margin-bottom: 6px; }
 button:disabled { color: var(--muted); cursor: default; background: #f6f7f9; }
+
+/* views */
+header .tabs { display: flex; border: 1px solid #c9ccd1; border-radius: 7px; overflow: hidden; }
+header .tabs button { border: 0; border-radius: 0; padding: 4px 14px; }
+header .tabs button.on { background: var(--accent); color: #fff; }
+header .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+#wlegend { position: absolute; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; font-size: 11px; color: #444; background: #fffd; padding: 4px 10px; border-radius: 6px; }
+.dot.mains { background: #f08c00; } .dot.lv { background: #19a7a0; }
+.glow { display: inline-block; width: 16px; height: 5px; border-radius: 3px; background: #ffb02e88; margin-right: 4px; vertical-align: 1px; }
+
+/* wiring on the plan */
+#plan.wiring .item { cursor: pointer; }
+#plan.wiring .item rect.body { fill-opacity: .55; stroke-dasharray: none; stroke: #222; stroke-width: .5; }
+#plan.wiring .hole, #plan.wiring .cutout { display: none; }
+.term circle { stroke: #fff; stroke-width: .7; cursor: crosshair; }
+.term.mains circle { fill: #f08c00; }
+.term.dc circle { fill: #19a7a0; }
+.term.custom circle { stroke-dasharray: 1.2 .8; }
+.term:hover circle { stroke: #000; stroke-width: 1; }
+.tlabel { font-size: 4.2px; fill: #fff; paint-order: stroke; stroke: #000a; stroke-width: .9px; pointer-events: none; }
+.wire path { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.wire .hit { stroke: transparent; stroke-width: 7; cursor: pointer; }
+.wire .mainsglow { stroke: #ffb02e; stroke-opacity: .45; stroke-width: 4.5; pointer-events: none; }
+.wire .core { stroke-width: 1.6; pointer-events: none; }
+.wire.sel .core { stroke-width: 2.4; }
+.wire.sel .hit { stroke: #0a62d055; stroke-width: 6; }
+.wire.bad .core { stroke-dasharray: 4 2; }
+.bend { fill: #fff; stroke: var(--accent); stroke-width: .9; cursor: move; }
+.preview { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 2; pointer-events: none; }
+.pill { padding: 1px 8px; border-radius: 10px; font-size: 12px; }
+.pill.mains { background: #fff1db; color: #a85a00; } .pill.dc { background: #e0f5f4; color: #127a75; }
+.dg { margin: 8px 0; }
+.dgrow { display: block; color: inherit; text-decoration: none; padding: 2px 0 2px 8px; font-size: 12px; }
+.dgrow:hover { background: #f3f5f8; }
+.term-name { display: inline-block; min-width: 34px; font-weight: 600; }
+.terms { margin: 4px 0 8px; } .terms input[type=text] { width: 90px; } .terms button { padding: 0 7px; }
+#bomwrap[open] summary { margin-bottom: 4px; }

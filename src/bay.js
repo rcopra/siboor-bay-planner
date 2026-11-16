@@ -86,6 +86,15 @@ export function toPanel(item, w, d, px, py) {
   return [item.x + qx, item.y + qy];
 }
 
+// The reverse of toPanel: a panel point -> the part's own frame.
+export function fromPanel(item, w, d, X, Y) {
+  const r = ((item.rot % 360) + 360) % 360, qx = X - item.x, qy = Y - item.y;
+  if (r === 0) return [qx, qy];
+  if (r === 90) return [qy, d - qx];
+  if (r === 180) return [w - qx, d - qy];
+  return [w - qy, qx];
+}
+
 export function footprint(item, part) {
   const [w, d] = partSize(item, part);
   const turned = item.rot % 180 !== 0;

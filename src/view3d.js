@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { COLOURS } from "./wires.js";
 import { panelSide, CORNER_R, PANEL_THICKNESS, BAY_HEIGHT, frameHoles, keepouts, partSize, placedHoles, placedCutouts, toPanel } from "./bay.js";
 
 const loader = new GLTFLoader();
@@ -131,6 +132,15 @@ export class View3D {
         place.updateMatrixWorld(true);
         group.add(new THREE.BoxHelper(place, "#0a62d0"));   // group sits at the origin
       }
+    }
+    // wires, as tubes at duct height
+    for (const r of this.app.routed.wires) {
+      if (!r.pts) continue;
+      const path = new THREE.CurvePath();
+      for (let i = 1; i < r.pts.length; i++) path.add(new THREE.LineCurve3(new THREE.Vector3(...r.pts[i - 1], 12), new THREE.Vector3(...r.pts[i], 12)));
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(path, r.pts.length * 12, 1.2, 6, false),
+        new THREE.MeshStandardMaterial({ color: COLOURS[r.wire.colour] ?? "#d62f2f", roughness: .6 }));
+      group.add(tube);
     }
     this.scene.remove(this.content);
     this.content = group;

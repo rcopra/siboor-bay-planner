@@ -172,6 +172,20 @@ for m in library:
         if thread:
             h["thread"] = thread
 
+# Screw terminals (part frame), measured on the parts above: the PSU's 9-way block along its left
+# end, 9.5 mm pitch, in the LRS-350's order (L, N, PE, -V x3, +V x3; +V by the voltage pot at the
+# back); the SSR's four corner terminals as labelled on its model.
+PSU_Y = [11.0, 20.5, 30.0, 39.5, 49.0, 58.5, 68.0, 77.5, 87.0]
+PSU_T = [("L", "L"), ("N", "N"), ("PE", "PE"), ("-V1", "−V"), ("-V2", "−V"), ("-V3", "−V"), ("+V1", "+V"), ("+V2", "+V"), ("+V3", "+V")]
+TERMINALS = {
+    "lrs-350": [dict(id=i, name=n, x=7.0, y=y, kind="mains" if k < 3 else "dc") for k, ((i, n), y) in enumerate(zip(PSU_T, PSU_Y))],
+    "ssr-delixi": [dict(id="L1", name="L1", x=9.3, y=54.0, kind="mains"), dict(id="T1", name="T1", x=36.3, y=54.0, kind="mains"),
+                   dict(id="A2-", name="A2−", x=9.3, y=6.5, kind="dc"), dict(id="A1+", name="A1+", x=36.3, y=6.5, kind="dc")],
+}
+for m in library:
+    if m["id"] in TERMINALS:
+        m["terminals"] = TERMINALS[m["id"]]
+
 (OUT / "library.json").write_text(json.dumps(library, indent=1))
 for m in library:
     print(f"{m['id']:22s} {m['size']}  below {m['below']}  holes {len(m['holes'])}  {[(h['x'], h['y'], h['d']) for h in m['holes']]}")

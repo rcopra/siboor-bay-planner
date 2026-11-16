@@ -2,7 +2,7 @@
 import { panelSide, CORNER_R, BAY_HEIGHT, frameHoles, keepouts, footprint, partSize, placedHoles, placedCutouts, holeLabel } from "./bay.js";
 
 const NS = "http://www.w3.org/2000/svg";
-const el = (tag, attrs = {}, parent) => {
+export const el = (tag, attrs = {}, parent) => {
   const e = document.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
   if (parent) parent.appendChild(e);
@@ -20,7 +20,9 @@ export class Plan2D {
     this.app = app;   // { state, partOf, colourOf, select(uid), move(uid, x, y), problems }
     this.view = null; // viewBox [x, y, w, h] in mm (SVG y down: -panel y)
     this.drag = null;
+    this.mode = "layout";   // or "wiring": parts stay put, clicks go to app.wiring
     svg.addEventListener("wheel", e => this.zoom(e), { passive: false });
+    svg.addEventListener("dblclick", e => { if (this.mode === "wiring") this.app.wiring.dblclick(e, this.toMM(e)); });
     svg.addEventListener("pointerdown", e => this.down(e));
     svg.addEventListener("pointermove", e => this.moveDrag(e));
     svg.addEventListener("pointerup", e => this.up(e));
@@ -62,6 +64,11 @@ export class Plan2D {
   down(e) {
     const g = e.target.closest(".item");
     const [mx, my] = this.toMM(e);
+    if (this.mode === "wiring") {
+      if (!this.app.wiring.down(e, [mx, my])) this.drag = { pan: true, x: e.clientX, y: e.clientY, view: [...this.view] };
+      this.svg.setPointerCapture(e.pointerId);
+      return;
+    }
     if (g) {
       const it = this.app.state.items.find(i => i.uid === g.dataset.uid);
       this.app.select(it.uid);
@@ -74,6 +81,7 @@ export class Plan2D {
   }
 
   moveDrag(e) {
+    if (this.mode === "wiring" && !this.drag?.pan && this.app.wiring.move(e, this.toMM(e))) return;
     if (!this.drag) return;
     if (this.drag.pan) {
       const k = this.view[2] / this.svg.clientWidth;
@@ -89,6 +97,7 @@ export class Plan2D {
   }
 
   up() {
+    if (this.mode === "wiring") this.app.wiring.up();
     if (this.drag && !this.drag.pan) this.app.commit();
     this.drag = null;
   }
@@ -98,6 +107,7 @@ export class Plan2D {
     const s = panelSide(state.size);
     if (!this.view) this.fit();
     this.svg.innerHTML = "";
+    this.svg.classList.toggle("wiring", this.mode === "wiring");
     const root = el("g", { transform: "scale(1,-1)" }, this.svg);
     const text = (x, y, str, attrs = {}) => {
       const t = el("text", { x, y: -y, transform: "scale(1,-1)", ...attrs }, root);
@@ -151,6 +161,11 @@ export class Plan2D {
       if (h > BAY_HEIGHT) t.textContent += " ⚠";
     }
 
+    if (this.mode === "wiring") {
+      this.app.wiring.draw(root, text);
+      text(s / 2, -14, "FRONT", { class: "dim", "text-anchor": "middle" });
+      return;
+    }
     // The stock panel's own holes and cut-out, on top: a part hole inside a ring reuses it.
     const stock = this.app.stock();
     for (const c of stock?.cutouts ?? []) el("path", { d: roundedRectPath(c.x, c.y, c.w, c.h, c.r), class: "stockcut" }, root);

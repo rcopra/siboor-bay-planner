@@ -3,6 +3,8 @@ import { Plan2D } from "./plan2d.js";
 import { View3D } from "./view3d.js";
 import { panelDrawing, panelDXF } from "./panel.js";
 import { drillTemplate } from "./pdf.js";
+import { routeWires } from "./wires.js";
+import { Wiring } from "./wiring.js";
 
 const $ = id => document.getElementById(id);
 const KEY = "siboor-bay-planner/v1";
@@ -30,9 +32,14 @@ const app = {
   select(uid) { this.state.selected = uid; update(); },
   move(uid, x, y) { const it = find(uid); it.x = round1(x); it.y = round1(y); update(false); },
   commit() { save(); },
+  update: (persist = true) => update(persist),
+  view: "layout",           // layout | wiring | 3d
+  routed: { wires: [], problems: {} },
 };
 app.state.items = app.state.items.filter(it => partById.has(it.part));   // parts since removed from the library
 app.state.base ??= "stock";
+app.state.wires ??= [];
+app.wiring = new Wiring(app);
 const plan = new Plan2D($("plan"), app);
 const view = new View3D($("three"), app);
 
@@ -46,14 +53,22 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 function update(persist = true) {
   const st = app.state;
   app.problems = problems(st.items, app.partOf, st.size, { iec: st.iec, stock: app.stock() });
+  app.routed = routeWires(st, app.partOf);
   $("legend-stock").hidden = !app.stock();
   for (const o of $("base").options) if (o.value !== "blank") o.disabled = !STOCK_HOLES[st.size];
   $("base").title = STOCK_HOLES[st.size] ? "Start from Siboor's pre-drilled bottom panel (as fitted, or turned 180°), or a blank one" : `Siboor has no drawing of the ${st.size} panel: blank only`;
   if (!$("plan").hidden) plan.render();
   if (!$("three").hidden) view.render();
-  renderStatus();
-  renderSelected();
-  renderBom();
+  if (app.view === "wiring") {
+    app.wiring.renderStatus($("status"));
+    app.wiring.renderSelected($("selected"));
+    $("bomwrap").querySelector("summary").textContent = `Wiring diagram (${st.wires.length})`;
+    app.wiring.renderDiagram($("bom"));
+  } else {
+    renderStatus();
+    renderSelected();
+    renderBom();
+  }
   if (persist) save();
 }
 
@@ -154,7 +169,9 @@ function duplicate() {
 }
 
 function remove() {
-  app.state.items = app.state.items.filter(i => i.uid !== app.state.selected);
+  const gone = app.state.selected;
+  app.state.items = app.state.items.filter(i => i.uid !== gone);
+  app.state.wires = app.state.wires.filter(w => w.a.uid !== gone && w.b.uid !== gone);
   app.state.selected = null;
   update();
 }
@@ -178,6 +195,7 @@ $("size").onchange = e => {
   // keep the parts where they are relative to the panel's centre (Siboor centres its layout)
   const old = panelSide(app.state.size), size = +e.target.value, shift = (panelSide(size) - old) / 2;
   for (const it of app.state.items) { it.x = round1(it.x + shift); it.y = round1(it.y + shift); }
+  for (const w of app.state.wires) w.pts = (w.pts ?? []).map(([x, y]) => [round1(x + shift), round1(y + shift)]);
   app.state.size = size;
   plan.fit();
   update();
@@ -186,7 +204,11 @@ $("base").value = app.state.base;
 $("base").onchange = e => {
   // turning the stock panel turns what's mounted on it; the printer's keep-outs stay put
   const was = app.state.base, now = e.target.value;
-  if (was !== "blank" && now !== "blank" && was !== now) app.state.items = app.state.items.map(it => turn180(it, app.partOf(it), app.state.size));
+  if (was !== "blank" && now !== "blank" && was !== now) {
+    const s = panelSide(app.state.size);
+    app.state.items = app.state.items.map(it => turn180(it, app.partOf(it), app.state.size));
+    for (const w of app.state.wires) w.pts = (w.pts ?? []).map(([x, y]) => [round1(s - x), round1(s - y)]);
+  }
   app.state.base = now;
   update();
 };
@@ -198,12 +220,12 @@ document.addEventListener("click", e => {
   for (const m of document.querySelectorAll("details.menu[open]")) if (!m.contains(e.target) || e.target.closest(".menu > div button")) m.open = false;
 });
 $("stock").onclick = () => {
-  if (app.state.items.length && !confirm("Replace this layout with Siboor's stock layout?")) return;
-  app.state.items = stockLayout(app.state.size, app.stockOpts()); app.state.selected = null; update();
+  if (app.state.items.length && !confirm(`Replace this layout with Siboor's stock layout?${app.state.wires.length ? " Its wires go too." : ""}`)) return;
+  app.state.items = stockLayout(app.state.size, app.stockOpts()); app.state.wires = []; app.state.selected = null; update();
 };
 $("clear").onclick = () => {
   if (app.state.items.length && !confirm("Remove every part?")) return;
-  app.state.items = []; app.state.selected = null; update();
+  app.state.items = []; app.state.wires = []; app.state.selected = null; update();
 };
 
 function download(blob, name) {
@@ -233,24 +255,34 @@ $("loadfile").onchange = async e => {
   const data = JSON.parse(await e.target.files[0].text());
   const missing = data.items.filter(it => !partById.has(it.part)).map(it => it.part);
   if (missing.length) alert(`Skipped parts this planner doesn't have: ${[...new Set(missing)].join(", ")}`);
-  app.state = { size: data.size, iec: data.iec, base: data.base ?? "stock", items: data.items.filter(it => partById.has(it.part)), selected: null };
+  const items = data.items.filter(it => partById.has(it.part)), kept = new Set([...items.map(i => i.uid), "printer"]);
+  app.state = { size: data.size, iec: data.iec, base: data.base ?? "stock", items, selected: null,
+    wires: (data.wires ?? []).filter(w => kept.has(w.a.uid) && kept.has(w.b.uid)), autoRoute: !!data.autoRoute };
   $("size").value = app.state.size; $("iec").checked = app.state.iec; $("base").value = app.state.base;
   plan.fit();
   update();
   e.target.value = "";
 };
-for (const [btn, show] of [["view2d", "plan"], ["view3d", "three"]]) {
-  $(btn).onclick = () => {
-    $("plan").hidden = show !== "plan"; $("three").hidden = show !== "three";
-    $("view2d").classList.toggle("on", show === "plan"); $("view3d").classList.toggle("on", show === "three");
-    $("legend").hidden = show !== "plan";
-    view.resize();
-    update(false);
-  };
+function showView(v) {
+  app.view = v;
+  plan.mode = v === "wiring" ? "wiring" : "layout";
+  app.wiring.drawing = null; app.wiring.placing = null;
+  $("plan").hidden = v === "3d"; $("three").hidden = v !== "3d";
+  for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.view === v);
+  $("library").hidden = v !== "layout";
+  $("legend").hidden = v !== "layout"; $("wlegend").hidden = v !== "wiring";
+  $("bomwrap").open = v === "wiring" || $("bomwrap").open;
+  view.resize();
+  update(false);
 }
+for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => showView(b.dataset.view);
+$("autoroute").checked = !!app.state.autoRoute;
+$("autoroute").onchange = e => { app.state.autoRoute = e.target.checked; update(); };
 
 document.addEventListener("keydown", e => {
   if (e.target.matches("input, select, textarea")) return;
+  if (app.view === "wiring") { if (app.wiring.keys(e)) e.preventDefault(); return; }
+  if (app.view !== "layout") return;
   const it = app.state.selected && find(app.state.selected);
   if (!it) return;
   const step = e.shiftKey ? 10 : 1;
