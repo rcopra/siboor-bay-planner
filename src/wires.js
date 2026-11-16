@@ -43,12 +43,12 @@ export function allTerminals(state, partOf) {
 export const findTerminal = (port, terms) => terms.find(t => t.owner === port.uid && t.id === port.t) ?? null;
 
 export function defaultColour(term) {
-  const n = term.name.replace(/\d+$/, "").toUpperCase();
-  if (n === "L" || n === "L1" || n === "T") return "brown";
-  if (n === "N") return "blue";
-  if (n === "PE" || n === "FG" || n === "⏚") return "green-yellow";
+  const n = term.name.replace(/\d+$/, "").toUpperCase(), first = n.split(" ")[0];   // "N in", "L out 2"
+  if (first === "L" || first === "L1" || first === "T") return "brown";
+  if (first === "N") return "blue";
+  if (first === "PE" || first === "FG" || first === "⏚") return "green-yellow";
   if (n.startsWith("+") || n.endsWith("+") || n === "V+") return "red";
-  if (n.startsWith("-") || n.startsWith("−") || n.endsWith("-") || n === "V-") return "black";
+  if (/^[-−]|[-−]$/.test(n) || n === "V-") return "black";
   return term.kind === "mains" ? "brown" : "red";
 }
 

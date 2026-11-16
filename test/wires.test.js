@@ -83,3 +83,25 @@ test("a wire leaves its own part the short way", () => {
   const out = [q[0] < r.x0 || q[0] > r.x1 || q[1] < r.y0 || q[1] > r.y1, Math.min(Math.abs(q[0] - p[0]), 200)];
   assert.ok(out[0], `first bend ${q} still on the PSU`);
 });
+
+test("every stock part has terminals, on the part, with unique ids", () => {
+  for (const p of LIB) {
+    assert.ok(p.terminals?.length, `${p.id} has no terminals`);
+    assert.equal(new Set(p.terminals.map(t => t.id)).size, p.terminals.length, p.id);
+    for (const t of p.terminals) assert.ok(t.x > 0 && t.x < p.size[0] && t.y > 0 && t.y < p.size[1], `${p.id} ${t.id}`);
+  }
+  const box = LIB.find(p => p.id === "siboor-breakout");
+  assert.ok(box.terminals.every(t => t.kind === "mains"));
+});
+
+test("default wire colours from terminal names", () => {
+  const c = (name, kind = "dc") => W.defaultColour({ name, kind });
+  assert.equal(c("A2−"), "black");
+  assert.equal(c("Bed out (PF5) −"), "black");
+  assert.equal(c("Motor power +"), "red");
+  assert.equal(c("N in", "mains"), "blue");
+  assert.equal(c("PE out 2", "mains"), "green-yellow");
+  assert.equal(c("L out 3", "mains"), "brown");
+  assert.equal(c("−V"), "black");
+  assert.equal(c("T1", "mains"), "brown");
+});

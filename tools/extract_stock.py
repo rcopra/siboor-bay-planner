@@ -160,10 +160,13 @@ library.append(m)
 m, _ = siboor("manta-m8p", "Mainboard-Assembly", "BTT Manta M8P 2.0", "Electronics",
               drop=("Motherboard driver cooling module",),
               notes="On M3 × 10 standoffs, without Siboor's driver fan module. The STEP has the "
-                    "board outline only (no connectors) to keep it small.", min_size=4, lighten=True)
+                    "board outline only (no connectors) to keep it small. Terminals: the power block "
+                    "and HE0–HE3, as on BTT's V2.0 pinout.", min_size=4, lighten=True)
 library.append(m)
 
-m, _ = siboor("siboor-breakout", "Cable breakout module", "Cable distribution box", "Electronics")
+m, _ = siboor("siboor-breakout", "Cable breakout module", "Cable distribution box", "Electronics",
+              notes="Siboor's three-in nine-out lever block. It carries mains (N, PE, L), one in and "
+                    "three out of each, as on Siboor's wiring diagram.")
 library.append(m)
 
 
@@ -184,10 +187,26 @@ for m in library:
 # back); the SSR's four corner terminals as labelled on its model.
 PSU_Y = [11.0, 20.5, 30.0, 39.5, 49.0, 58.5, 68.0, 77.5, 87.0]
 PSU_T = [("L", "L"), ("N", "N"), ("PE", "PE"), ("-V1", "−V"), ("-V2", "−V"), ("-V3", "−V"), ("+V1", "+V"), ("+V2", "+V"), ("+V3", "+V")]
+# The M8P's: its 8-way power block along the left edge (screws at x 7.6, 9.5 mm pitch; top to bottom
+# as on BTT's V2.0 pinout: Motor power -/+, Power -/+, Bed power -/+, Bed out +/PF5) and the
+# HE0-HE3 heater blocks along the front edge (5 mm pitch; VBB then the switched pin, per the
+# pinout). The distribution box is Siboor's "three-in nine-out" lever block, which carries mains
+# (Siboor's wiring diagram V1.5): inputs along the front, outputs along the back, N, PE, L from
+# left to right as drawn there.
+M8P_BLOCK = [("MOT-", "Motor power −"), ("MOT+", "Motor power +"), ("PWR-", "Power −"), ("PWR+", "Power +"),
+             ("BEDIN-", "Bed power −"), ("BEDIN+", "Bed power +"), ("BED+", "Bed out +"), ("BED-", "Bed out (PF5) −")]
+M8P_HE = ["HE0", "HE1", "HE2", "HE3"]   # switched pins PA0, PA1, PA3, PA5
 TERMINALS = {
     "lrs-350": [dict(id=i, name=n, x=7.0, y=y, kind="mains" if k < 3 else "dc") for k, ((i, n), y) in enumerate(zip(PSU_T, PSU_Y))],
     "ssr-delixi": [dict(id="L1", name="L1", x=9.3, y=54.0, kind="mains"), dict(id="T1", name="T1", x=36.3, y=54.0, kind="mains"),
                    dict(id="A2-", name="A2−", x=9.3, y=6.5, kind="dc"), dict(id="A1+", name="A1+", x=36.3, y=6.5, kind="dc")],
+    "manta-m8p": [dict(id=i, name=n, x=7.6, y=round(86.0 - 9.5 * k, 1), kind="dc") for k, (i, n) in enumerate(M8P_BLOCK)]
+                 + [t for k, he in enumerate(M8P_HE) for t in (
+                     dict(id=f"{he}+", name=f"{he}+", x=round(17.6 + 10 * k, 1), y=5.5, kind="dc"),
+                     dict(id=f"{he}-", name=f"{he}−", x=round(22.6 + 10 * k, 1), y=5.5, kind="dc"))],
+    "siboor-breakout": [t for g, (c, xin) in enumerate((("N", 14.3), ("PE", 24.3), ("L", 34.3))) for t in (
+        [dict(id=f"{c}-in", name=f"{c} in", x=xin, y=8.0, kind="mains")]
+        + [dict(id=f"{c}{k + 1}", name=f"{c} out {k + 1}", x=round(4.3 + 15 * g + 5 * k, 1), y=33.9, kind="mains") for k in range(3)])],
 }
 for m in library:
     if m["id"] in TERMINALS:

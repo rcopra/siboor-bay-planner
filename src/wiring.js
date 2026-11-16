@@ -37,11 +37,20 @@ export class Wiring {
     }
     const sel = this.routedOf(this.st.wireSel);
     if (sel?.pts) sel.pts.slice(1, -1).forEach((p, i) => el("circle", { cx: p[0], cy: p[1], r: 2.6, class: "bend", "data-i": i }, root));
-    for (const t of this.terms()) {
+    const terms = this.terms();
+    // A label that would run into the next terminal along its row is written upwards instead, or
+    // downwards if that would run into another label. Boxes are [x0, y0, x1, y1], mm.
+    const len = t => t.name.length * 2.2;
+    const crowded = t => terms.some(o => o.owner === t.owner && o !== t && Math.abs(o.y - t.y) < 3 && o.x > t.x && o.x - t.x < 4 + len(t));
+    const flat = terms.filter(t => !crowded(t)).map(t => [t.x + 4, t.y - 1.4, t.x + 4 + len(t), t.y + 2.2]);
+    const hits = b => flat.some(f => b[0] < f[2] && f[0] < b[2] && b[1] < f[3] && f[1] < b[3]);
+    for (const t of terms) {
       const g = el("g", { class: `term ${t.kind}${t.custom ? " custom" : ""}`, "data-term": `${t.owner}|${t.id}` }, root);
       el("circle", { cx: t.x, cy: t.y, r: 2.8 }, g)
         .appendChild(Object.assign(document.createElementNS("http://www.w3.org/2000/svg", "title"), { textContent: `${t.partName} ${t.name} (${t.kind === "mains" ? "mains" : "low voltage"})` }));
-      text(t.x + 4, t.y - 1.4, t.name, { class: "tlabel" });
+      if (!crowded(t)) text(t.x + 4, t.y - 1.4, t.name, { class: "tlabel" });
+      else if (!hits([t.x - 1.6, t.y + 3.2, t.x + 1.4, t.y + 3.2 + len(t) + 1.5])) text(t.x + 1.4, t.y + 3.2, t.name, { class: "tlabel", transform: `scale(1,-1) rotate(-90 ${t.x + 1.4} ${-(t.y + 3.2)})` });
+      else text(t.x - 1.4, t.y - 3.2, t.name, { class: "tlabel", transform: `scale(1,-1) rotate(90 ${t.x - 1.4} ${-(t.y - 3.2)})` });
     }
     this.preview = el("path", { class: "preview", d: "" }, root);
     this.showPreview();

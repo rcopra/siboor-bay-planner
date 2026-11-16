@@ -183,7 +183,7 @@
   "name": "BTT Manta M8P 2.0",
   "category": "Electronics",
   "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
-  "notes": "On M3 \u00d7 10 standoffs, without Siboor's driver fan module. The STEP has the board outline only (no connectors) to keep it small.",
+  "notes": "On M3 \u00d7 10 standoffs, without Siboor's driver fan module. The STEP has the board outline only (no connectors) to keep it small. Terminals: the power block and HE0\u2013HE3, as on BTT's V2.0 pinout.",
   "holes": [
    {
     "x": 5.0,
@@ -222,13 +222,127 @@
    103.1,
    27.1
   ],
-  "below": 0
+  "below": 0,
+  "terminals": [
+   {
+    "id": "MOT-",
+    "name": "Motor power \u2212",
+    "x": 7.6,
+    "y": 86.0,
+    "kind": "dc"
+   },
+   {
+    "id": "MOT+",
+    "name": "Motor power +",
+    "x": 7.6,
+    "y": 76.5,
+    "kind": "dc"
+   },
+   {
+    "id": "PWR-",
+    "name": "Power \u2212",
+    "x": 7.6,
+    "y": 67.0,
+    "kind": "dc"
+   },
+   {
+    "id": "PWR+",
+    "name": "Power +",
+    "x": 7.6,
+    "y": 57.5,
+    "kind": "dc"
+   },
+   {
+    "id": "BEDIN-",
+    "name": "Bed power \u2212",
+    "x": 7.6,
+    "y": 48.0,
+    "kind": "dc"
+   },
+   {
+    "id": "BEDIN+",
+    "name": "Bed power +",
+    "x": 7.6,
+    "y": 38.5,
+    "kind": "dc"
+   },
+   {
+    "id": "BED+",
+    "name": "Bed out +",
+    "x": 7.6,
+    "y": 29.0,
+    "kind": "dc"
+   },
+   {
+    "id": "BED-",
+    "name": "Bed out (PF5) \u2212",
+    "x": 7.6,
+    "y": 19.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE0+",
+    "name": "HE0+",
+    "x": 17.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE0-",
+    "name": "HE0\u2212",
+    "x": 22.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE1+",
+    "name": "HE1+",
+    "x": 27.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE1-",
+    "name": "HE1\u2212",
+    "x": 32.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE2+",
+    "name": "HE2+",
+    "x": 37.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE2-",
+    "name": "HE2\u2212",
+    "x": 42.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE3+",
+    "name": "HE3+",
+    "x": 47.6,
+    "y": 5.5,
+    "kind": "dc"
+   },
+   {
+    "id": "HE3-",
+    "name": "HE3\u2212",
+    "x": 52.6,
+    "y": 5.5,
+    "kind": "dc"
+   }
+  ]
  },
  {
   "name": "Cable distribution box",
   "category": "Electronics",
   "source": "Siboor Trident June CAD (github.com/Lzhikai/SIBOOR-Voron-Trident-June)",
-  "notes": "",
+  "notes": "Siboor's three-in nine-out lever block. It carries mains (N, PE, L), one in and three out of each, as on Siboor's wiring diagram.",
   "holes": [
    {
     "x": 7.03,
@@ -253,6 +367,92 @@
    41.9,
    15.1
   ],
-  "below": 0.0
+  "below": 0.0,
+  "terminals": [
+   {
+    "id": "N-in",
+    "name": "N in",
+    "x": 14.3,
+    "y": 8.0,
+    "kind": "mains"
+   },
+   {
+    "id": "N1",
+    "name": "N out 1",
+    "x": 4.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "N2",
+    "name": "N out 2",
+    "x": 9.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "N3",
+    "name": "N out 3",
+    "x": 14.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "PE-in",
+    "name": "PE in",
+    "x": 24.3,
+    "y": 8.0,
+    "kind": "mains"
+   },
+   {
+    "id": "PE1",
+    "name": "PE out 1",
+    "x": 19.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "PE2",
+    "name": "PE out 2",
+    "x": 24.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "PE3",
+    "name": "PE out 3",
+    "x": 29.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "L-in",
+    "name": "L in",
+    "x": 34.3,
+    "y": 8.0,
+    "kind": "mains"
+   },
+   {
+    "id": "L1",
+    "name": "L out 1",
+    "x": 34.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "L2",
+    "name": "L out 2",
+    "x": 39.3,
+    "y": 33.9,
+    "kind": "mains"
+   },
+   {
+    "id": "L3",
+    "name": "L out 3",
+    "x": 44.3,
+    "y": 33.9,
+    "kind": "mains"
+   }
+  ]
  }
 ]
